@@ -15,8 +15,11 @@ from .core.doctor import ejecutar_diagnostico_doctor
 from .core.ecosystem import (
     deckard_to_scorm,
     extract_and_audit_c_code,
+    generate_memory_diagram,
     gift_to_scorm_sco,
+    idkfa_to_scorm_tracing,
     parse_scorm_tracking_log,
+    scaffold_wasm_playground,
 )
 from .core.models import ScormVersion
 from .core.moodle import (
@@ -487,6 +490,67 @@ def cmd_dredd_sync(
     if output:
         output.write_text(json.dumps(grades, indent=2, ensure_ascii=False), encoding="utf-8")
         console.print(f"[green]Reporte Dredd exportado en:[/green] {output}")
+
+
+@app.command("diagram-memory")
+def cmd_diagram_memory(
+    trace_file: Path = typer.Argument(..., help="Archivo JSON con la traza de memoria (frames y heap)."),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Archivo de salida para el diagrama Mermaid."),
+) -> None:
+    """Generá un diagrama Mermaid de memoria Stack y Heap (Bishop/Sebastian) para lecciones SCORM."""
+    if not trace_file.exists():
+        err_console.print(f"[red]Error:[/red] {trace_file} no existe.")
+        raise typer.Exit(1)
+
+    try:
+        raw = json.loads(trace_file.read_text(encoding="utf-8"))
+        frames = raw.get("stack", raw.get("frames", []))
+        heap = raw.get("heap", [])
+        diagram = generate_memory_diagram(frames, heap)
+    except Exception as exc:
+        err_console.print(f"[red]Error al procesar traza de memoria:[/red] {exc}")
+        raise typer.Exit(1) from exc
+
+    if output:
+        output.write_text(diagram, encoding="utf-8")
+        console.print(f"[green]Diagrama Mermaid guardado en:[/green] {output}")
+    else:
+        console.print(diagram)
+
+
+@app.command("from-idkfa")
+def cmd_from_idkfa(
+    template: Path = typer.Argument(..., help="Plantilla C de ejercicio de tracing de IDKFA."),
+    target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
+    build: bool = typer.Option(False, "--build", "-b", help="Compilar automáticamente a archivo .zip."),
+) -> None:
+    """Convertí una plantilla de tracing C de IDKFA a una lección interactiva SCORM autoevaluable."""
+    try:
+        course = idkfa_to_scorm_tracing(template, target)
+    except Exception as exc:
+        err_console.print(f"[red]Error al convertir plantilla IDKFA:[/red] {exc}")
+        raise typer.Exit(1) from exc
+
+    console.print(f"[green]Lección SCORM generada en[/green] {target}")
+    if build:
+        zip_out = target.with_suffix(".zip")
+        build_package(target, zip_out)
+        console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
+
+
+@app.command("playground")
+def cmd_playground(
+    target: Path = typer.Argument(..., help="Directorio destino del módulo Playground Wasm."),
+    title: str = typer.Option("Playground C WebAssembly", "--title", "-t", help="Título del módulo."),
+    build: bool = typer.Option(False, "--build", "-b", help="Compilar automáticamente a archivo .zip."),
+) -> None:
+    """Generá un módulo SCORM interactivo con compilador C WebAssembly en el navegador."""
+    course = scaffold_wasm_playground(target, title=title)
+    console.print(f"[green]Playground Wasm generado en[/green] {target}")
+    if build:
+        zip_out = target.with_suffix(".zip")
+        build_package(target, zip_out)
+        console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
 
 
 def _print_report(report: ValidationReport) -> None:

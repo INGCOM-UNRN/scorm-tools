@@ -220,3 +220,56 @@ def test_cli_dredd_sync(tmp_path: Path) -> None:
     assert len(data) == 2
     assert data[0]["passed"] is True
     assert data[1]["passed"] is False
+
+
+def test_cli_diagram_memory(tmp_path: Path) -> None:
+    trace_json = tmp_path / "trace.json"
+    trace_json.write_text(json.dumps({
+        "stack": [{"function": "main", "variables": {"x": 10}}],
+        "heap": [{"address": "0x1234", "size": 32, "tag": "array"}],
+    }), encoding="utf-8")
+
+    out_diag = tmp_path / "diagram.mmd"
+    res = runner.invoke(app, ["diagram-memory", str(trace_json), "-o", str(out_diag)])
+    assert res.exit_code == 0
+    assert out_diag.exists()
+    assert "graph TD" in out_diag.read_text(encoding="utf-8")
+
+
+def test_cli_from_idkfa(tmp_path: Path) -> None:
+    template_c = tmp_path / "pregunta.c"
+    template_c.write_text("""
+// ¿Qué imprime este programa?
+#include <stdio.h>
+int main(void) {
+    int a = 5;
+    printf("%d", a);
+    return 0;
+}
+/*name
+Tracing Básico
+*/
+/*opciones
+5
+0
+Error
+*/
+""", encoding="utf-8")
+
+    target_dir = tmp_path / "scorm_idkfa"
+    res = runner.invoke(app, ["from-idkfa", str(template_c), str(target_dir), "--build"])
+    assert res.exit_code == 0
+    assert (target_dir / "scorm.yaml").exists()
+    assert (target_dir / "index.html").exists()
+    assert target_dir.with_suffix(".zip").exists()
+
+
+def test_cli_playground(tmp_path: Path) -> None:
+    target_dir = tmp_path / "scorm_wasm"
+    res = runner.invoke(app, ["playground", str(target_dir), "--title", "Wasm C Lab", "--build"])
+    assert res.exit_code == 0
+    assert (target_dir / "scorm.yaml").exists()
+    assert (target_dir / "index.html").exists()
+    assert target_dir.with_suffix(".zip").exists()
+    html = (target_dir / "index.html").read_text(encoding="utf-8")
+    assert "clang-wasm" in html

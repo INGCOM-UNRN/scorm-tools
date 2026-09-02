@@ -9,8 +9,11 @@ from .ecosystem import (
     extract_and_audit_c_code,
     generate_memory_diagram,
     gift_to_scorm_sco,
+    idkfa_to_scorm_tracing,
     parse_gift_questions,
+    parse_idkfa_template,
     parse_scorm_tracking_log,
+    scaffold_wasm_playground,
 )
 from .manifest import render_manifest
 from .models import (
@@ -67,6 +70,7 @@ __all__ = [
     "generate_memory_diagram",
     "generate_moodle_settings",
     "gift_to_scorm_sco",
+    "idkfa_to_scorm_tracing",
     "inject_completed_on_view",
     "inject_iframe_resizer",
     "load_course",
@@ -75,11 +79,13 @@ __all__ = [
     "minify_js",
     "optimize_images",
     "parse_gift_questions",
+    "parse_idkfa_template",
     "parse_scorm_tracking_log",
     "render_manifest",
     "render_sequencing_tree",
     "sanitize_moodle_identifier",
     "scaffold_course",
+    "scaffold_wasm_playground",
     "validate_package",
     "validate_sequencing",
 ]
