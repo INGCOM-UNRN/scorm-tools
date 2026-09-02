@@ -7,7 +7,16 @@ from typing import Any
 
 import yaml
 
-from .models import Course, Item, Organization, Resource, ScormVersion
+from .models import (
+    Course,
+    Item,
+    Objective,
+    Organization,
+    Resource,
+    RollupRule,
+    ScormVersion,
+    SequencingRule,
+)
 
 COURSE_DESCRIPTOR_NAME = "scorm.yaml"
 
@@ -22,6 +31,50 @@ def _parse_item(data: dict[str, Any]) -> Item:
             "Cada item requiere 'identifier' y 'title'."
         )
     children = [_parse_item(c) for c in data.get("children", [])]
+
+    # Parse prerequisites
+    prereqs_raw = data.get("prerequisites", [])
+    if isinstance(prereqs_raw, str):
+        prerequisites = [p.strip() for p in prereqs_raw.split(",") if p.strip()]
+    elif isinstance(prereqs_raw, list):
+        prerequisites = [str(p) for p in prereqs_raw]
+    else:
+        prerequisites = []
+
+    # Parse sequencing rules
+    seq_rules: list[SequencingRule] = []
+    for r in data.get("sequencing_rules", []):
+        seq_rules.append(
+            SequencingRule(
+                action=r.get("action", "disabled"),
+                condition=r.get("condition", "satisfied"),
+                operator=r.get("operator", "noOp"),
+                referenced_objective=r.get("referenced_objective"),
+            )
+        )
+
+    # Parse rollup rules
+    rollup_rules: list[RollupRule] = []
+    for ru in data.get("rollup_rules", []):
+        rollup_rules.append(
+            RollupRule(
+                child_activity_set=ru.get("child_activity_set", "all"),
+                condition=ru.get("condition", "satisfied"),
+                action=ru.get("action", "satisfied"),
+            )
+        )
+
+    # Parse objectives
+    objectives: list[Objective] = []
+    for obj in data.get("objectives", []):
+        objectives.append(
+            Objective(
+                identifier=obj.get("identifier") or obj.get("id", "OBJ"),
+                satisfied_by_measure=obj.get("satisfied_by_measure", False),
+                min_normalized_measure=obj.get("min_normalized_measure"),
+            )
+        )
+
     return Item(
         identifier=data["identifier"],
         title=data["title"],
@@ -30,8 +83,14 @@ def _parse_item(data: dict[str, Any]) -> Item:
         mastery_score=data.get("mastery_score"),
         max_time_allowed=data.get("max_time_allowed"),
         time_action=data.get("time_action", "continue,message"),
-        prerequisites=data.get("prerequisites"),
+        prerequisites=prerequisites,
         parameters=data.get("parameters"),
+        flow=data.get("flow", True),
+        choice=data.get("choice", True),
+        sequencing_rules=seq_rules,
+        rollup_rules=rollup_rules,
+        objectives=objectives,
+        completed_on_view=data.get("completed_on_view", False),
     )
 
 

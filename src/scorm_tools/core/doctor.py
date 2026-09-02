@@ -24,6 +24,7 @@ def ejecutar_diagnostico_doctor(console: Console | None = None) -> bool:
         ("lxml", "Parser XML y validador de esquemas XSD", True),
         ("jinja2", "Motor de plantillas para imsmanifest.xml y assets", True),
         ("yaml", "Parser PyYAML para descriptores scorm.yaml", True),
+        ("PIL", "Compresión y optimización de imágenes (WebP)", False),
     ]
 
     dep_results: list[dict[str, Any]] = []

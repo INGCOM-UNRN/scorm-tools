@@ -83,3 +83,65 @@ def test_cli_lifecycle_roundtrip(tmp_path: Path) -> None:
     assert res_val_md.exit_code == 0
     assert "### Informe de Validación SCORM" in res_val_md.output
     assert "✓ **Válido**" in res_val_md.output
+
+    # 8. check-sequencing
+    res_seq = runner.invoke(app, ["check-sequencing", str(target_dir)])
+    assert res_seq.exit_code == 0
+    assert "Árbol de Secuenciamiento" in res_seq.output
+
+    res_seq_json = runner.invoke(app, ["check-sequencing", str(target_dir), "--json"])
+    assert res_seq_json.exit_code == 0
+    seq_data = json.loads(res_seq_json.output)
+    assert seq_data["valid"] is True
+
+    # 9. check-size
+    res_size = runner.invoke(app, ["check-size", str(output_zip)])
+    assert res_size.exit_code == 0
+    assert "Auditoría de Tamaño de Paquete" in res_size.output
+
+    res_size_json = runner.invoke(app, ["check-size", str(output_zip), "--json"])
+    assert res_size_json.exit_code == 0
+    size_data = json.loads(res_size_json.output)
+    assert size_data["total_bytes"] > 0
+    assert "html" in size_data["categories_kb"]
+
+    # 10. moodle-config
+    moodle_cfg = tmp_path / "moodle_settings.json"
+    res_moodle = runner.invoke(app, ["moodle-config", str(target_dir), "-o", str(moodle_cfg)])
+    assert res_moodle.exit_code == 0
+    assert moodle_cfg.exists()
+    moodle_data = json.loads(moodle_cfg.read_text(encoding="utf-8"))
+    assert moodle_data["course_title"] == "Curso CLI"
+    assert "activity_settings" in moodle_data
+
+
+def test_cli_build_with_optimization_and_moodle_flags(tmp_path: Path) -> None:
+    target_dir = tmp_path / "curso_opt"
+    runner.invoke(app, ["init", str(target_dir), "--title", "Curso Opt"])
+
+    out_zip = tmp_path / "curso_opt.zip"
+    res = runner.invoke(
+        app,
+        [
+            "build",
+            str(target_dir),
+            "-o",
+            str(out_zip),
+            "--minify",
+            "--sourcemap",
+            "--inject-resizer",
+            "--completed-on-view",
+        ],
+    )
+    assert res.exit_code == 0
+    assert out_zip.exists()
+
+    # Validar que el zip contenga los archivos procesados
+    import zipfile
+    with zipfile.ZipFile(out_zip) as zf:
+        namelist = zf.namelist()
+        assert "style.css" in namelist
+        assert "style.css.map" in namelist
+        html = zf.read("index.html").decode("utf-8")
+        assert "iframe-resizer helper" in html
+        assert "completed-on-view auto-marker" in html

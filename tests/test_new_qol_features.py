@@ -77,3 +77,112 @@ def test_scorm_12_validation_markdown(tmp_path: Path) -> None:
     md = report.to_markdown()
     assert "Versión SCORM:** `1.2`" in md
     assert "✓ **Válido**" in md
+
+
+def test_minify_css_and_js() -> None:
+    from scorm_tools.core.optimizer import minify_css, minify_js, generate_sourcemap
+
+    raw_css = """
+    /* Comentario de prueba */
+    body {
+        background-color: #fff;
+        margin: 0px;
+    }
+    """
+    min_css = minify_css(raw_css)
+    assert "/* Comentario" not in min_css
+    assert "background-color:#fff" in min_css
+
+    raw_js = """
+    // Line comment
+    function saludar(nombre) {
+        /* Multi-line
+           comment */
+        return "Hola " + nombre;
+    }
+    """
+    min_js = minify_js(raw_js)
+    assert "// Line comment" not in min_js
+    assert "/* Multi-line" not in min_js
+    assert 'return "Hola " + nombre;' in min_js
+
+    sm = generate_sourcemap("script.js", raw_js)
+    parsed_sm = json.loads(sm)
+    assert parsed_sm["version"] == 3
+    assert parsed_sm["file"] == "script.js"
+
+
+def test_moodle_identifier_sanitization_and_settings() -> None:
+    from scorm_tools.core.moodle import sanitize_moodle_identifier, generate_moodle_settings, audit_moodle_compatibility
+    from scorm_tools.core.models import Course, Organization, Item
+
+    bad_id = "  ¡Hola mundo! #123_test$  "
+    san = sanitize_moodle_identifier(bad_id)
+    assert san == "Hola-mundo-123_test"
+
+    course = Course(
+        identifier="CURSO-C",
+        title="Curso de C",
+        organizations=[Organization(identifier="ORG-1", title="Org", items=[Item(identifier="IT-1", title="T1", mastery_score=80)])]
+    )
+    settings = generate_moodle_settings(course)
+    assert settings["scorm_identifier"] == "CURSO-C"
+    assert settings["activity_settings"]["maxgrade"] == 100
+
+    warns = audit_moodle_compatibility(course)
+    assert len(warns) == 0
+
+
+def test_sequencing_manifest_compilation_and_xsd_validation(tmp_path: Path) -> None:
+    from scorm_tools.core.models import Item, Organization, Resource, SequencingRule, RollupRule, Objective
+    from scorm_tools.core.descriptor import load_course
+    from scorm_tools.core.packager import build_package
+
+    scorm_yaml = tmp_path / "scorm.yaml"
+    scorm_yaml.write_text("""
+identifier: ADVANCED-SEQ-2004
+title: Curso con Secuenciamiento Avanzado
+version: 2004-4ed
+organizations:
+  - identifier: ORG-1
+    title: Estructura de Módulos
+    items:
+      - identifier: MOD-1
+        title: "Módulo 1: Fundamentos"
+        resource: RES-1
+        mastery_score: 75
+        choice: true
+        flow: true
+        objectives:
+          - id: OBJ-FUNDAMENTOS
+            satisfied_by_measure: true
+            min_normalized_measure: 0.75
+        rollup_rules:
+          - child_activity_set: all
+            condition: satisfied
+            action: satisfied
+      - identifier: MOD-2
+        title: "Módulo 2: Punteros Avanzados"
+        resource: RES-1
+        prerequisites: [MOD-1]
+        sequencing_rules:
+          - action: disabled
+            condition: satisfied
+            operator: not
+            referenced_objective: OBJ-FUNDAMENTOS
+resources:
+  - identifier: RES-1
+    href: index.html
+    type: sco
+""", encoding="utf-8")
+
+    (tmp_path / "index.html").write_text("<html><body>Contenido</body></html>", encoding="utf-8")
+    (tmp_path / "style.css").write_text("body { color: black; }", encoding="utf-8")
+
+    zip_out = tmp_path / "advanced.zip"
+    course = build_package(tmp_path, zip_out, minify=True, inject_resizer=True)
+
+    assert zip_out.exists()
+    report = validate_package(zip_out)
+    assert report.ok is True, report.errors
+    assert report.scorm_version == "2004"

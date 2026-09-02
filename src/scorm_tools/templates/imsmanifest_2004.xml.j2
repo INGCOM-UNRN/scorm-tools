@@ -24,13 +24,51 @@
 {%- if item.parameters %}
         <adlcp:dataFromLMS>{{ item.parameters }}</adlcp:dataFromLMS>
 {%- endif %}
-{%- if item.resource_identifier and item.mastery_score is not none %}
+{%- if (item.mastery_score is not none) or item.sequencing_rules or item.rollup_rules or item.objectives or (not item.flow) or (not item.choice) %}
         <imsss:sequencing>
+{%- if not item.flow or not item.choice %}
+          <imsss:controlMode choice="{{ 'true' if item.choice else 'false' }}" flow="{{ 'true' if item.flow else 'false' }}"/>
+{%- endif %}
+{%- if item.sequencing_rules %}
+          <imsss:sequencingRules>
+{%- for rule in item.sequencing_rules %}
+            <imsss:preConditionRule>
+              <imsss:ruleConditions>
+                <imsss:ruleCondition condition="{{ rule.condition }}" operator="{{ rule.operator }}"{% if rule.referenced_objective %} referencedObjective="{{ rule.referenced_objective }}"{% endif %}/>
+              </imsss:ruleConditions>
+              <imsss:ruleAction action="{{ rule.action }}"/>
+            </imsss:preConditionRule>
+{%- endfor %}
+          </imsss:sequencingRules>
+{%- endif %}
+{%- if item.rollup_rules %}
+          <imsss:rollupRules>
+{%- for rrule in item.rollup_rules %}
+            <imsss:rollupRule childActivitySet="{{ rrule.child_activity_set }}">
+              <imsss:rollupConditions>
+                <imsss:rollupCondition condition="{{ rrule.condition }}"/>
+              </imsss:rollupConditions>
+              <imsss:rollupAction action="{{ rrule.action }}"/>
+            </imsss:rollupRule>
+{%- endfor %}
+          </imsss:rollupRules>
+{%- endif %}
+{%- if (item.mastery_score is not none) or item.objectives %}
           <imsss:objectives>
+{%- if item.mastery_score is not none %}
             <imsss:primaryObjective objectiveID="PRIMARY" satisfiedByMeasure="true">
               <imsss:minNormalizedMeasure>{{ "%.2f"|format(item.mastery_score / 100) }}</imsss:minNormalizedMeasure>
             </imsss:primaryObjective>
+{%- endif %}
+{%- for obj in item.objectives %}
+            <imsss:objective objectiveID="{{ obj.identifier }}"{% if obj.satisfied_by_measure %} satisfiedByMeasure="true"{% endif %}>
+{%- if obj.min_normalized_measure is not none %}
+              <imsss:minNormalizedMeasure>{{ "%.2f"|format(obj.min_normalized_measure) }}</imsss:minNormalizedMeasure>
+{%- endif %}
+            </imsss:objective>
+{%- endfor %}
           </imsss:objectives>
+{%- endif %}
         </imsss:sequencing>
 {%- endif %}
 {%- if item.children %}

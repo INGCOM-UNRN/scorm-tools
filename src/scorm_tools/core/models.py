@@ -26,18 +26,52 @@ class Resource:
 
 
 @dataclass
+class SequencingRule:
+    """Regla de secuenciamiento IMSSS (pre-condition, post-condition)."""
+
+    action: str  # "disabled", "hideLMSUI", "skip", "exitParent", "retry"
+    condition: str  # "satisfied", "notSatisfied", "completed", "incomplete", "attempted"
+    operator: str = "noOp"  # "noOp", "not"
+    referenced_objective: str | None = None
+
+
+@dataclass
+class RollupRule:
+    """Regla de acumulación de objetivos y completitud IMSSS."""
+
+    child_activity_set: str = "all"  # "all", "any", "none"
+    condition: str = "satisfied"  # "satisfied", "completed"
+    action: str = "satisfied"  # "satisfied", "notSatisfied", "completed", "incomplete"
+
+
+@dataclass
+class Objective:
+    """Objetivo de aprendizaje SCORM 2004."""
+
+    identifier: str
+    satisfied_by_measure: bool = False
+    min_normalized_measure: float | None = None
+
+
+@dataclass
 class Item:
     """Nodo de la jerarquía de organización (lo que el alumno navega)."""
 
     identifier: str
     title: str
     resource_identifier: str | None = None
-    children: list["Item"] = field(default_factory=list)
+    children: list[Item] = field(default_factory=list)
     mastery_score: int | None = None
     max_time_allowed: str | None = None
     time_action: str = "continue,message"
-    prerequisites: str | None = None
+    prerequisites: list[str] = field(default_factory=list)
     parameters: str | None = None
+    flow: bool = True
+    choice: bool = True
+    sequencing_rules: list[SequencingRule] = field(default_factory=list)
+    rollup_rules: list[RollupRule] = field(default_factory=list)
+    objectives: list[Objective] = field(default_factory=list)
+    completed_on_view: bool = False
 
 
 @dataclass
