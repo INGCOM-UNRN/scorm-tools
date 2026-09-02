@@ -12,6 +12,12 @@ from rich.table import Table
 
 from .core.descriptor import CourseDescriptorError, load_course
 from .core.doctor import ejecutar_diagnostico_doctor
+from .core.ecosystem import (
+    deckard_to_scorm,
+    extract_and_audit_c_code,
+    gift_to_scorm_sco,
+    parse_scorm_tracking_log,
+)
 from .core.models import ScormVersion
 from .core.moodle import (
     audit_moodle_compatibility,
@@ -360,6 +366,127 @@ def cmd_moodle_config(
 
     if json_output or not output:
         console.print(json.dumps(settings, indent=2, ensure_ascii=False))
+
+
+@app.command("from-deckard")
+def cmd_from_deckard(
+    guia: Path = typer.Argument(..., help="Archivo guia.yaml de ejercicios de Deckard."),
+    target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
+    version: ScormVersion = typer.Option(
+        ScormVersion.SCORM_2004_4ED, "--scorm-version", "--version", help="Versión SCORM (1.2 o 2004)."
+    ),
+    build: bool = typer.Option(
+        False, "--build", "-b", help="Compilar automáticamente a archivo .zip tras generar los fuentes."
+    ),
+) -> None:
+    """Convertí una guía de ejercicios de Deckard a un curso SCORM interactivo."""
+    try:
+        course = deckard_to_scorm(guia, target, version=version)
+    except Exception as exc:
+        err_console.print(f"[red]Error al convertir guía Deckard:[/red] {exc}")
+        raise typer.Exit(1) from exc
+
+    console.print(f"[green]Curso SCORM generado en[/green] {target} con {len(course.organization().items)} ejercicios.")
+    if build:
+        zip_out = target.with_suffix(".zip")
+        build_package(target, zip_out)
+        console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
+
+
+@app.command("from-gift")
+def cmd_from_gift(
+    gift_file: Path = typer.Argument(..., help="Archivo de preguntas en formato GIFT."),
+    target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
+    title: str = typer.Option("Cuestionario SCORM", "--title", "-t", help="Título del cuestionario."),
+    build: bool = typer.Option(
+        False, "--build", "-b", help="Compilar automáticamente a archivo .zip tras generar los fuentes."
+    ),
+) -> None:
+    """Convertí un banco de preguntas GIFT (Moodle) en un módulo SCORM interactivo autoevaluable."""
+    try:
+        course = gift_to_scorm_sco(gift_file, target, title=title)
+    except Exception as exc:
+        err_console.print(f"[red]Error al procesar archivo GIFT:[/red] {exc}")
+        raise typer.Exit(1) from exc
+
+    console.print(f"[green]Cuestionario SCORM generado en[/green] {target}")
+    if build:
+        zip_out = target.with_suffix(".zip")
+        build_package(target, zip_out)
+        console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
+
+
+@app.command("audit-c")
+def cmd_audit_c(
+    source: Path = typer.Argument(..., help="Directorio del curso SCORM a auditar."),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emite los hallazgos en formato JSON estructurado."
+    ),
+) -> None:
+    """Auditá fragmentos de código C embebidos en el contenido SCORM contra reglas Ripley."""
+    findings = extract_and_audit_c_code(source)
+    if json_output:
+        console.print(json.dumps(findings, indent=2, ensure_ascii=False))
+        if findings:
+            raise typer.Exit(1)
+        return
+
+    if not findings:
+        console.print("[green]✓ No se detectaron infracciones de código C en las lecciones.[/green]")
+        return
+
+    table = Table(title="Auditoría de Código C Embebido (Ripley / Convenciones de Cátedra)", border_style="red")
+    table.add_column("Archivo", style="cyan")
+    table.add_column("Regla", style="bold yellow")
+    table.add_column("Detalle", style="white")
+
+    for f in findings:
+        table.add_row(f["file"], f["rule"], f["detail"])
+
+    console.print(table)
+    err_console.print(f"[red]✗ Se encontraron {len(findings)} infracción(es) en el código C embebido.[/red]")
+    raise typer.Exit(1)
+
+
+@app.command("dredd-sync")
+def cmd_dredd_sync(
+    tracking_file: Path = typer.Argument(..., help="Archivo JSON con registros de tracking SCORM exportados."),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Archivo donde guardar el reporte para Dredd."),
+) -> None:
+    """Procesá registros de tracking de Moodle SCORM para integrarlos al calificador docente Dredd."""
+    if not tracking_file.exists():
+        err_console.print(f"[red]Error:[/red] {tracking_file} no existe.")
+        raise typer.Exit(1)
+
+    try:
+        raw = json.loads(tracking_file.read_text(encoding="utf-8"))
+        if isinstance(raw, dict):
+            raw = [raw]
+        grades = parse_scorm_tracking_log(raw)
+    except Exception as exc:
+        err_console.print(f"[red]Error al parsear tracking:[/red] {exc}")
+        raise typer.Exit(1) from exc
+
+    table = Table(title="Calificaciones SCORM Procesadas para Dredd", border_style="cyan")
+    table.add_column("Estudiante / Legajo", style="bold white")
+    table.add_column("Nota", justify="right")
+    table.add_column("Estado", justify="center")
+    table.add_column("Aprobado", justify="center")
+
+    for g in grades:
+        color = "green" if g["passed"] else "red"
+        table.add_row(
+            g["student_id"],
+            f"{g['score']:.1f}",
+            g["status"],
+            f"[{color}]{'SÍ' if g['passed'] else 'NO'}[/{color}]",
+        )
+
+    console.print(table)
+
+    if output:
+        output.write_text(json.dumps(grades, indent=2, ensure_ascii=False), encoding="utf-8")
+        console.print(f"[green]Reporte Dredd exportado en:[/green] {output}")
 
 
 def _print_report(report: ValidationReport) -> None:

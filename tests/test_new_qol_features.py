@@ -186,3 +186,35 @@ resources:
     report = validate_package(zip_out)
     assert report.ok is True, report.errors
     assert report.scorm_version == "2004"
+
+
+def test_parse_gift_questions_and_diagram() -> None:
+    from scorm_tools.core.ecosystem import parse_gift_questions, generate_memory_diagram
+
+    gift_sample = """
+    ::V/F:: En C los arreglos son 0-indexados {T}
+
+    ::Pregunta MC:: ¿Cuál reserva memoria dinámica? {
+      = malloc
+      ~ printf
+      ~ sizeof
+    }
+    """
+    qs = parse_gift_questions(gift_sample)
+    assert len(qs) == 2
+    assert qs[0]["type"] == "true_false"
+    assert qs[0]["correct"] is True
+    assert qs[1]["type"] == "multiple_choice"
+    assert any(opt["correct"] for opt in qs[1]["options"])
+
+    diagram = generate_memory_diagram(
+        stack_frames=[
+            {"function": "main", "variables": {"argc": 1}},
+            {"function": "factorial", "variables": {"n": 3}},
+        ],
+        heap_blocks=[{"address": "0x1000", "size": 64, "tag": "buffer"}],
+    )
+    assert "graph TD" in diagram
+    assert "Memoria Stack" in diagram
+    assert "Memoria Heap" in diagram
+    assert "0x1000" in diagram

@@ -145,3 +145,78 @@ def test_cli_build_with_optimization_and_moodle_flags(tmp_path: Path) -> None:
         html = zf.read("index.html").decode("utf-8")
         assert "iframe-resizer helper" in html
         assert "completed-on-view auto-marker" in html
+
+
+def test_cli_from_deckard_roundtrip(tmp_path: Path) -> None:
+    guia_yaml = tmp_path / "guia.yaml"
+    guia_yaml.write_text("""
+nombre: "Guía 1: Punteros"
+minutos_totales: 30
+ejercicios:
+  - id: swap-punteros
+    minutos: 15
+    bloom: 3
+    tema: punteros
+""", encoding="utf-8")
+
+    target_dir = tmp_path / "scorm_deckard"
+    res = runner.invoke(app, ["from-deckard", str(guia_yaml), str(target_dir), "--build"])
+    assert res.exit_code == 0
+    assert (target_dir / "scorm.yaml").exists()
+    assert (target_dir / "swap-punteros.html").exists()
+    assert (target_dir.with_suffix(".zip")).exists()
+
+
+def test_cli_from_gift_roundtrip(tmp_path: Path) -> None:
+    gift_file = tmp_path / "preguntas.gift"
+    gift_file.write_text("""
+::Punteros en C:: ¿El operador & obtiene la dirección de memoria? {T}
+
+::Desreferencia:: ¿Qué operador desreferencia un puntero? {
+  = *
+  ~ &
+  ~ ->
+}
+""", encoding="utf-8")
+
+    target_dir = tmp_path / "scorm_gift"
+    res = runner.invoke(app, ["from-gift", str(gift_file), str(target_dir), "--title", "Quiz Punteros", "--build"])
+    assert res.exit_code == 0
+    assert (target_dir / "scorm.yaml").exists()
+    assert (target_dir / "index.html").exists()
+    assert (target_dir.with_suffix(".zip")).exists()
+
+
+def test_cli_audit_c(tmp_path: Path) -> None:
+    # Caso 1: curso sin infracciones
+    curso_limpio = tmp_path / "curso_limpio"
+    curso_limpio.mkdir()
+    (curso_limpio / "index.html").write_text("<code>int x = 42;</code>", encoding="utf-8")
+    res_ok = runner.invoke(app, ["audit-c", str(curso_limpio)])
+    assert res_ok.exit_code == 0
+
+    # Caso 2: curso con gets()
+    curso_inseguro = tmp_path / "curso_inseguro"
+    curso_inseguro.mkdir()
+    (curso_inseguro / "index.html").write_text("<code>char buf[10]; gets(buf);</code>", encoding="utf-8")
+    res_bad = runner.invoke(app, ["audit-c", str(curso_inseguro)])
+    assert res_bad.exit_code != 0
+    assert "gets()" in res_bad.output
+
+
+def test_cli_dredd_sync(tmp_path: Path) -> None:
+    tracking_json = tmp_path / "tracking.json"
+    tracking_json.write_text(json.dumps([
+        {"student_id": "EST-101", "score_raw": 85, "lesson_status": "passed"},
+        {"student_id": "EST-102", "score_raw": 40, "lesson_status": "failed"},
+    ]), encoding="utf-8")
+
+    out_file = tmp_path / "dredd_report.json"
+    res = runner.invoke(app, ["dredd-sync", str(tracking_json), "-o", str(out_file)])
+    assert res.exit_code == 0
+    assert out_file.exists()
+    assert "EST-101" in res.output
+    data = json.loads(out_file.read_text(encoding="utf-8"))
+    assert len(data) == 2
+    assert data[0]["passed"] is True
+    assert data[1]["passed"] is False

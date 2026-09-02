@@ -4,6 +4,14 @@ from __future__ import annotations
 
 from .descriptor import CourseDescriptorError, load_course
 from .doctor import ejecutar_diagnostico_doctor
+from .ecosystem import (
+    deckard_to_scorm,
+    extract_and_audit_c_code,
+    generate_memory_diagram,
+    gift_to_scorm_sco,
+    parse_gift_questions,
+    parse_scorm_tracking_log,
+)
 from .manifest import render_manifest
 from .models import (
     Course,
@@ -53,8 +61,12 @@ __all__ = [
     "audit_moodle_compatibility",
     "build_package",
     "check_package_size",
+    "deckard_to_scorm",
     "ejecutar_diagnostico_doctor",
+    "extract_and_audit_c_code",
+    "generate_memory_diagram",
     "generate_moodle_settings",
+    "gift_to_scorm_sco",
     "inject_completed_on_view",
     "inject_iframe_resizer",
     "load_course",
@@ -62,6 +74,8 @@ __all__ = [
     "minify_css",
     "minify_js",
     "optimize_images",
+    "parse_gift_questions",
+    "parse_scorm_tracking_log",
     "render_manifest",
     "render_sequencing_tree",
     "sanitize_moodle_identifier",
