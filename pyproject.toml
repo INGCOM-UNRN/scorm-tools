@@ -6,17 +6,17 @@ readme = "README.md"
 authors = [
     { name = "Martín René", email = "martinvilu@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "jinja2>=3.1.6",
-    "lxml>=6.1.2",
-    "pyyaml>=6.0.3",
-    "rich>=15.0.0",
-    "typer>=0.27.2",
+    "lxml>=5.0.0",
+    "pyyaml>=6.0.0",
+    "rich>=13.0.0",
+    "typer>=0.12.0",
 ]
 
 [project.scripts]
-scorm-tools = "scorm_tools:main"
+scorm-tools = "scorm_tools.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -27,5 +27,9 @@ packages = ["src/scorm_tools"]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.1.1",
+    "pytest>=7.0.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
