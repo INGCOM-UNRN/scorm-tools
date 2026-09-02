@@ -5,6 +5,37 @@ para crear, gestionar y validar contenido compatible con el estándar **SCORM**
 (1.2 y 2004 3ra/4ta edición), listo para integrarse en plataformas LMS como
 **Moodle**.
 
+---
+
+## 🎯 Alcance
+
+### Qué cubre
+- Inicialización, validación formal y empaquetado de módulos de aprendizaje interactivo en formato SCORM para Moodle.
+- Soporte completo para especificaciones SCORM 1.2 y SCORM 2004 4th Edition.
+- Validación rigurosa de manifiestos `imsmanifest.xml` contra los esquemas XSD oficiales provistos localmente.
+- Scaffolding declarativo de cursos a través de archivo de configuración `scorm.yaml`.
+- Generación de paquetes comprimidos `.zip` listos para desplegar en plataformas LMS.
+
+### Qué no cubre (Límites y Delegación)
+- Autoría del contenido interactivo HTML, CSS o JavaScript del módulo.
+- Calificación directa de entregas de código de software (delegado a `dredd`).
+- Gestión de bancos de preguntas Moodle XML o GIFT (delegado a `moodle-toolbox`).
+
+---
+
+## 📋 Requisitos
+
+### Requisitos de Sistema y Entorno
+- Multiplataforma. Python >= 3.10.
+
+### Dependencias Externas y Binarios
+- Ninguno obligatorio.
+
+### Integración en el Ecosistema
+- CLI `scorm-tools`.
+
+---
+
 ## Instalación
 
 ```bash
