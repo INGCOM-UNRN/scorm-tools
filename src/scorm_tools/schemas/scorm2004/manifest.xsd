@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Schema "envoltorio" para validar el imsmanifest.xml de SCORM 2004 completo:
+  combina IMS Content Packaging 1.1 con las extensiones ADL CP/SEQ/NAV 1.3 y
+  el Simple Sequencing (IMS SS) 1.0, de modo que los elementos imsss:*,
+  adlcp:*, adlseq:* y adlnav:* usados en el manifiesto sean reconocidos.
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import
+    namespace="http://www.imsglobal.org/xsd/imscp_v1p1"
+    schemaLocation="imscp_v1p1.xsd"/>
+  <xsd:import
+    namespace="http://www.adlnet.org/xsd/adlcp_v1p3"
+    schemaLocation="adlcp_v1p3.xsd"/>
+  <xsd:import
+    namespace="http://www.adlnet.org/xsd/adlseq_v1p3"
+    schemaLocation="adlseq_v1p3.xsd"/>
+  <xsd:import
+    namespace="http://www.adlnet.org/xsd/adlnav_v1p3"
+    schemaLocation="adlnav_v1p3.xsd"/>
+  <xsd:import
+    namespace="http://www.imsglobal.org/xsd/imsss"
+    schemaLocation="imsss_v1p0.xsd"/>
+</xsd:schema>

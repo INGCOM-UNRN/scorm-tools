@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Schema "envoltorio" para validar el imsmanifest.xml de SCORM 1.2 completo:
+  combina IMS Content Packaging 1.1.2 con las extensiones ADL CP 1.2, de modo
+  que los elementos/atributos adlcp: (masteryscore, scormtype, prerequisites,
+  etc.) tengan declaración global conocida por el validador.
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import
+    namespace="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+    schemaLocation="imscp_rootv1p1p2.xsd"/>
+  <xsd:import
+    namespace="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+    schemaLocation="adlcp_rootv1p2.xsd"/>
+</xsd:schema>

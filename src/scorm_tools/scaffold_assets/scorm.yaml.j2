@@ -1,0 +1,24 @@
+# Descriptor del curso SCORM. Editado por `scorm-tools init` y leído por
+# `scorm-tools build` para generar el imsmanifest.xml.
+identifier: {{ identifier }}
+title: "{{ title }}"
+version: "{{ version }}"          # 1.2 | 2004-3ed | 2004-4ed
+description: "{{ description }}"
+
+organizations:
+  - identifier: ORG-1
+    title: "{{ title }}"
+    items:
+      - identifier: ITEM-1
+        title: "Módulo 1"
+        resource: RES-1
+        mastery_score: 80
+
+resources:
+  - identifier: RES-1
+    href: index.html
+    type: sco
+    files:
+      - index.html
+      - scorm-api.js
+      - style.css

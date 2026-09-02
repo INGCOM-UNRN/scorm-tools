@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="scorm-api.js"></script>
+</head>
+<body onload="ScormAPI.init()" onunload="ScormAPI.terminate()">
+  <main class="sco">
+    <h1>{{ title }}</h1>
+    <p>Contenido de ejemplo generado por scorm-tools. Reemplace este texto por
+      el material real del SCO.</p>
+
+    <section>
+      <button id="complete-btn" type="button">Marcar como completado</button>
+      <p id="status"></p>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById("complete-btn").addEventListener("click", () => {
+      ScormAPI.setCompleted();
+      ScormAPI.setScore(100);
+      document.getElementById("status").textContent = "Completado.";
+    });
+  </script>
+</body>
+</html>

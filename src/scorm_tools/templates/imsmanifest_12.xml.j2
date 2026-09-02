@@ -1,0 +1,49 @@
+<?xml version="1.0" standalone="no" ?>
+<manifest identifier="{{ course.identifier }}" version="1.1"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd
+                      http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>1.2</schemaversion>
+  </metadata>
+  <organizations default="{{ organization.identifier }}">
+    <organization identifier="{{ organization.identifier }}">
+      <title>{{ organization.title }}</title>
+{%- for item in organization.items recursive %}
+      <item identifier="{{ item.identifier }}"{% if item.resource_identifier %} identifierref="{{ item.resource_identifier }}"{% endif %}>
+        <title>{{ item.title }}</title>
+{%- if item.resource_identifier and item.mastery_score is not none %}
+        <adlcp:masteryscore>{{ item.mastery_score }}</adlcp:masteryscore>
+{%- endif %}
+{%- if item.prerequisites %}
+        <adlcp:prerequisites type="aicc_script">{{ item.prerequisites }}</adlcp:prerequisites>
+{%- endif %}
+{%- if item.max_time_allowed %}
+        <adlcp:maxtimeallowed>{{ item.max_time_allowed }}</adlcp:maxtimeallowed>
+        <adlcp:timelimitaction>{{ item.time_action }}</adlcp:timelimitaction>
+{%- endif %}
+{%- if item.children %}
+{{ loop(item.children) }}
+{%- endif %}
+      </item>
+{%- endfor %}
+    </organization>
+  </organizations>
+  <resources>
+{%- for resource in course.resources %}
+    <resource identifier="{{ resource.identifier }}" type="webcontent"
+      {%- if resource.scorm_type == "sco" %} adlcp:scormtype="sco"{% else %} adlcp:scormtype="asset"{% endif %}
+      href="{{ resource.href }}">
+{%- for dep in resource.dependencies %}
+      <dependency identifierref="{{ dep }}"/>
+{%- endfor %}
+{%- for f in resource.files %}
+      <file href="{{ f }}"/>
+{%- endfor %}
+    </resource>
+{%- endfor %}
+  </resources>
+</manifest>
