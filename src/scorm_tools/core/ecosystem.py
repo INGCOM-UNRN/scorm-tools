@@ -372,13 +372,22 @@ def generate_memory_diagram(
     stack_frames: list[dict[str, Any]],
     heap_blocks: list[dict[str, Any]] | None = None,
 ) -> str:
-    """Genera código Mermaid para visualizar memoria Stack y Heap dentro de lecciones SCORM."""
+    """Genera código Mermaid para visualizar memoria Stack y Heap dentro de lecciones SCORM compatible con Bishop/Sebastian."""
     lines: list[str] = ["graph TD", "  subgraph Stack [Memoria Stack / Pila]"]
 
     for i, frame in enumerate(stack_frames):
-        fn_name = frame.get("function", f"frame_{i}")
-        vars_info = frame.get("variables", {})
-        vars_str = "<br/>".join(f"{k}: {v}" for k, v in vars_info.items()) or "sin variables locales"
+        fn_name = frame.get("function") or frame.get("funcion") or f"frame_{i}"
+        vars_raw = frame.get("variables", {})
+        if isinstance(vars_raw, list):
+            vars_str = "<br/>".join(
+                f"{v.get('nombre', v.get('name', 'var'))}: {v.get('valor', v.get('value', '?'))}"
+                for v in vars_raw if isinstance(v, dict)
+            ) or "sin variables locales"
+        elif isinstance(vars_raw, dict):
+            vars_str = "<br/>".join(f"{k}: {v}" for k, v in vars_raw.items()) or "sin variables locales"
+        else:
+            vars_str = "sin variables locales"
+
         node_id = f"F_{i}"
         lines.append(f'    {node_id}["Frame: {fn_name}<br/>{vars_str}"]')
 
@@ -390,9 +399,9 @@ def generate_memory_diagram(
     if heap_blocks:
         lines.append("  subgraph Heap [Memoria Heap / Dinámica]")
         for j, block in enumerate(heap_blocks):
-            addr = block.get("address", f"0xHEAP{j}")
-            bytes_sz = block.get("size", 16)
-            tag = block.get("tag", "malloc")
+            addr = block.get("address") or block.get("direccion") or f"0xHEAP{j}"
+            bytes_sz = block.get("size") or block.get("tamanio_bytes") or 16
+            tag = block.get("tag") or ("liberado" if block.get("esta_liberado") else "malloc")
             node_h = f"H_{j}"
             lines.append(f'    {node_h}["Bloque {addr}<br/>{bytes_sz} bytes ({tag})"]')
         lines.append("  end")

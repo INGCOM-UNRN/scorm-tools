@@ -236,6 +236,39 @@ def test_cli_diagram_memory(tmp_path: Path) -> None:
     assert "graph TD" in out_diag.read_text(encoding="utf-8")
 
 
+def test_cli_diagram_memory_bishop_format(tmp_path: Path) -> None:
+    # Formato emitido por bishop: frames en español, variables como lista de dicts
+    trace_json = tmp_path / "bishop_trace.json"
+    trace_json.write_text(json.dumps({
+        "frames": [
+            {
+                "funcion": "sumar",
+                "variables": [
+                    {"nombre": "a", "valor": "5", "tipo": "int"},
+                    {"nombre": "b", "valor": "10", "tipo": "int"},
+                ]
+            }
+        ],
+        "heap": [
+            {
+                "direccion": "0x5555555592a0",
+                "tamanio_bytes": 64,
+                "esta_liberado": False,
+            }
+        ]
+    }), encoding="utf-8")
+
+    out_diag = tmp_path / "diagram_bishop.mmd"
+    res = runner.invoke(app, ["diagram-memory", str(trace_json), "-o", str(out_diag)])
+    assert res.exit_code == 0
+    assert out_diag.exists()
+    content = out_diag.read_text(encoding="utf-8")
+    assert "Frame: sumar" in content
+    assert "a: 5" in content
+    assert "Bloque 0x5555555592a0" in content
+    assert "64 bytes (malloc)" in content
+
+
 def test_cli_from_idkfa(tmp_path: Path) -> None:
     template_c = tmp_path / "pregunta.c"
     template_c.write_text("""
