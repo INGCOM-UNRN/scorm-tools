@@ -102,6 +102,38 @@ uv run scorm-tools info ./mi-curso
 Muestra en tablas la jerarquía de items/resources definida en `scorm.yaml`
 antes de compilar el paquete.
 
+### `doctor` — diagnóstico del entorno
+
+```bash
+uv run scorm-tools doctor
+```
+
+Verifica dependencias, esquemas XSD vendorizados y utilidades del sistema.
+
+### Comandos adicionales e integraciones
+
+```bash
+# Validar secuenciamiento SCORM 2004
+uv run scorm-tools check-sequencing ./mi-curso
+
+# Auditar tamaño de assets y empaquetado para Moodle
+uv run scorm-tools check-size ./mi-curso
+
+# Generar configuración recomendada para actividad SCORM en Moodle
+uv run scorm-tools moodle-config ./mi-curso
+
+# Generar módulos SCORM desde guías deckard o cuestionarios GIFT/idkfa
+uv run scorm-tools from-deckard guia.yaml -o ./scorm-guia
+uv run scorm-tools from-gift preguntas.gift -o ./scorm-preguntas
+uv run scorm-tools from-idkfa plantilla.c -o ./scorm-tracing
+
+# Auditar código C embebido en recursos interactivos
+uv run scorm-tools audit-c ./mi-curso
+
+# Servidor de desarrollo interactivo con runtime SCORM simulado
+uv run scorm-tools playground ./mi-curso --port 8080
+```
+
 ## Formato de `scorm.yaml`
 
 ```yaml
