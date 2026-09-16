@@ -195,13 +195,23 @@ def test_cli_audit_c(tmp_path: Path) -> None:
     res_ok = runner.invoke(app, ["audit-c", str(curso_limpio)])
     assert res_ok.exit_code == 0
 
-    # Caso 2: curso con gets()
+    # Caso 2: curso con gets() (Kaneda)
     curso_inseguro = tmp_path / "curso_inseguro"
     curso_inseguro.mkdir()
     (curso_inseguro / "index.html").write_text("<code>char buf[10]; gets(buf);</code>", encoding="utf-8")
     res_bad = runner.invoke(app, ["audit-c", str(curso_inseguro)])
     assert res_bad.exit_code != 0
     assert "gets()" in res_bad.output
+    assert "KAN001" in res_bad.output
+
+    # Caso 3: curso con antipatrones (Spunkmeyer)
+    curso_antipatron = tmp_path / "curso_antipatron"
+    curso_antipatron.mkdir()
+    (curso_antipatron / "index.html").write_text("<code>int *p = (int *)malloc(sizeof(int)); while (!feof(f)) {}</code>", encoding="utf-8")
+    res_ap = runner.invoke(app, ["audit-c", str(curso_antipatron)])
+    assert res_ap.exit_code != 0
+    assert "AP001" in res_ap.output
+    assert "AP002" in res_ap.output
 
 
 def test_cli_dredd_sync(tmp_path: Path) -> None:

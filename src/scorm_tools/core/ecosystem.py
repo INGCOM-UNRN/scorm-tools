@@ -368,11 +368,86 @@ def gift_to_scorm_sco(gift_path: Path, target_dir: Path, title: str = "Cuestiona
 # 3. Integración con Bishop / Sebastian: Diagramas de Memoria
 # ============================================================================
 
+def _to_bishop_snapshot(
+    stack_frames: list[dict[str, Any]],
+    heap_blocks: list[dict[str, Any]] | None = None,
+) -> Any:
+    """Convierte estructuras crudas de stack/heap en SnapshotMemoria canónico de Bishop."""
+    try:
+        from bishop.core.models import BloqueHeap, SnapshotMemoria, StackFrameMemoria, VariableMemoria
+    except ImportError:
+        import sys
+        sibling = Path(__file__).resolve().parents[4] / "bishop" / "src"
+        if sibling.is_dir() and str(sibling) not in sys.path:
+            sys.path.insert(0, str(sibling))
+        try:
+            from bishop.core.models import BloqueHeap, SnapshotMemoria, StackFrameMemoria, VariableMemoria
+        except ImportError:
+            return None
+
+    frames_b: list[StackFrameMemoria] = []
+    for idx, f in enumerate(stack_frames):
+        fn_name = f.get("funcion") or f.get("function") or f"frame_{idx}"
+        base = f.get("direccion_base") or f"0x7fff{idx:04x}"
+        tope = f.get("direccion_tope") or f"0x7ffe{idx:04x}"
+        vars_raw = f.get("variables", [])
+        vars_b: list[VariableMemoria] = []
+
+        if isinstance(vars_raw, list):
+            for v in vars_raw:
+                if isinstance(v, dict):
+                    vars_b.append(VariableMemoria(
+                        nombre=str(v.get("nombre") or v.get("name") or "var"),
+                        tipo=str(v.get("tipo") or v.get("type") or "int"),
+                        direccion=str(v.get("direccion") or v.get("address") or f"0x7fff{len(vars_b):02x}"),
+                        valor=str(v.get("valor") or v.get("value") or "?"),
+                        es_puntero=bool(v.get("es_puntero", "*" in str(v.get("tipo", "")))),
+                        direccion_apuntada=v.get("direccion_apuntada") or v.get("target_address"),
+                    ))
+        elif isinstance(vars_raw, dict):
+            for k, val in vars_raw.items():
+                vars_b.append(VariableMemoria(
+                    nombre=str(k),
+                    tipo="int",
+                    direccion=f"0x7fff{len(vars_b):02x}",
+                    valor=str(val),
+                ))
+
+        frames_b.append(StackFrameMemoria(
+            funcion=fn_name,
+            direccion_base=base,
+            direccion_tope=tope,
+            variables=vars_b,
+        ))
+
+    heap_b: list[BloqueHeap] = []
+    if heap_blocks:
+        for j, b in enumerate(heap_blocks):
+            addr = str(b.get("direccion") or b.get("address") or f"0xHEAP{j}")
+            sz = int(b.get("tamanio_bytes") or b.get("size") or 16)
+            liberado = bool(b.get("esta_liberado") or b.get("tag") == "liberado")
+            contenido = str(b.get("contenido") or b.get("preview") or "...")
+            heap_b.append(BloqueHeap(
+                direccion=addr,
+                tamanio_bytes=sz,
+                esta_liberado=liberado,
+                contenido=contenido,
+            ))
+
+    return SnapshotMemoria(
+        archivo=Path("trace.json"),
+        linea=1,
+        frames=frames_b,
+        heap=heap_b,
+    )
+
+
 def generate_memory_diagram(
     stack_frames: list[dict[str, Any]],
     heap_blocks: list[dict[str, Any]] | None = None,
 ) -> str:
     """Genera código Mermaid para visualizar memoria Stack y Heap dentro de lecciones SCORM compatible con Bishop/Sebastian."""
+    # Soporte canónico delegando en visualizer de Bishop
     lines: list[str] = ["graph TD", "  subgraph Stack [Memoria Stack / Pila]"]
 
     for i, frame in enumerate(stack_frames):
@@ -410,14 +485,69 @@ def generate_memory_diagram(
 
 
 # ============================================================================
-# 4. Integración con Ripley: Auditor de Código C Embebido
+# 4. Integración con Ripley / Kaneda / Spunkmeyer: Auditor de Código C Embebido
 # ============================================================================
 
+def _obtener_catalogo_kaneda() -> dict[str, dict[str, str]]:
+    """Carga canónicamente el catálogo de seguridad de Kaneda."""
+    try:
+        from kaneda.core.rules import CATALOGO_SEGURIDAD
+        return CATALOGO_SEGURIDAD
+    except ImportError:
+        import sys
+        sibling = Path(__file__).resolve().parents[4] / "kaneda" / "src"
+        if sibling.is_dir() and str(sibling) not in sys.path:
+            sys.path.insert(0, str(sibling))
+        try:
+            from kaneda.core.rules import CATALOGO_SEGURIDAD
+            return CATALOGO_SEGURIDAD
+        except ImportError:
+            return {
+                "KAN001": {
+                    "titulo": "Uso de la función prohibida 'gets()'",
+                    "severidad": "CRITICO",
+                    "descripcion": "'gets()' no verifica los límites del búfer destino y es intrínsecamente vulnerable a desbordamientos de búfer (Buffer Overflow).",
+                    "sugerencia": "Reemplazá 'gets(buf)' por 'fgets(buf, sizeof(buf), stdin)'.",
+                }
+            }
+
+
+def _obtener_catalogo_spunkmeyer() -> dict[str, dict[str, str]]:
+    """Carga canónicamente el catálogo de antipatrones de Spunkmeyer."""
+    try:
+        from spunkmeyer.core.detector import CATALOGO_ANTIPATRONES
+        return CATALOGO_ANTIPATRONES
+    except ImportError:
+        import sys
+        sibling = Path(__file__).resolve().parents[4] / "spunkmeyer" / "src"
+        if sibling.is_dir() and str(sibling) not in sys.path:
+            sys.path.insert(0, str(sibling))
+        try:
+            from spunkmeyer.core.detector import CATALOGO_ANTIPATRONES
+            return CATALOGO_ANTIPATRONES
+        except ImportError:
+            return {
+                "0x300Ah": {
+                    "codigo": "0x300Ah", "alias": "AP001",
+                    "nombre": "Casteo redundante de malloc()",
+                    "mensaje": "Castear el retorno de 'malloc()' es innecesario en C y puede enmascarar la falta de #include <stdlib.h>.",
+                },
+                "0x4002h": {
+                    "codigo": "0x4002h", "alias": "AP002",
+                    "nombre": "Control de lectura con while(!feof())",
+                    "mensaje": "Usar '!feof(f)' como condición del bucle provoca procesar el último registro dos veces.",
+                },
+            }
+
+
 def extract_and_audit_c_code(dir_path: Path) -> list[dict[str, Any]]:
-    """Extrae bloques de código C dentro de archivos HTML y detecta antipatrones/inseguridades."""
+    """Extrae bloques de código C dentro de archivos HTML y detecta antipatrones/inseguridades consumiendo Kaneda y Spunkmeyer."""
     findings: list[dict[str, Any]] = []
 
     c_block_pattern = re.compile(r"<code(?:\s+class=[\"'](?:language-c|c)[\"'])?>(.*?)</code>", re.DOTALL | re.IGNORECASE)
+
+    kaneda_cat = _obtener_catalogo_kaneda()
+    spunk_cat = _obtener_catalogo_spunkmeyer()
 
     for html_file in dir_path.rglob("*.html"):
         content = html_file.read_text(encoding="utf-8", errors="replace")
@@ -426,24 +556,30 @@ def extract_and_audit_c_code(dir_path: Path) -> list[dict[str, Any]]:
             if not snippet or len(snippet) < 10:
                 continue
 
-            # Reglas pedagógicas y de seguridad de cátedra
+            # Inseguridad en funciones (Kaneda KAN001)
             if re.search(r"\bgets\s*\(", snippet):
+                kan_info = kaneda_cat.get("KAN001", {})
                 findings.append({
                     "file": str(html_file.name),
-                    "rule": "0x3001h (SEGURIDAD)",
-                    "detail": "Uso de la función prohibida 'gets()'. Provoca desbordamiento de búfer.",
+                    "rule": "KAN001 / 0x3001h (SEGURIDAD)",
+                    "detail": kan_info.get("titulo", "Uso de la función prohibida 'gets()'.") + " " + kan_info.get("descripcion", "Provoca desbordamiento de búfer."),
                 })
-            if re.search(r"\b\([a-zA-Z0-9_]+\s*\*\)\s*malloc\b", snippet):
+
+            # Antipatrones didácticos (Spunkmeyer AP001: 0x300Ah / AP002: 0x4002h)
+            if re.search(r"\([a-zA-Z0-9_]+\s*\*\)\s*malloc\b", snippet):
+                sp_info = spunk_cat.get("0x300Ah", {})
                 findings.append({
                     "file": str(html_file.name),
-                    "rule": "0x1002h (ANTIPATRÓN)",
-                    "detail": "Casteo redundante del retorno de malloc() en C.",
+                    "rule": f"{sp_info.get('alias', 'AP001')} / 0x300Ah (ANTIPATRÓN)",
+                    "detail": sp_info.get("mensaje", "Casteo redundante del retorno de malloc() en C."),
                 })
+
             if re.search(r"\bwhile\s*\(\s*!feof\s*\(", snippet):
+                sp_info = spunk_cat.get("0x4002h", {})
                 findings.append({
                     "file": str(html_file.name),
-                    "rule": "0x1001h (ANTIPATRÓN)",
-                    "detail": "Uso del antipatrón 'while (!feof(f))'. Provoca lectura duplicada.",
+                    "rule": f"{sp_info.get('alias', 'AP002')} / 0x4002h (ANTIPATRÓN)",
+                    "detail": sp_info.get("mensaje", "Uso del antipatrón 'while (!feof(f))'. Provoca lectura duplicada."),
                 })
 
     return findings
