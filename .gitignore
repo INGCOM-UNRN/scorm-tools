@@ -9,3 +9,7 @@ wheels/
 # Virtual environments
 .venv
 dist/
+
+*.py[cod]
+
+.pytest_cache/
