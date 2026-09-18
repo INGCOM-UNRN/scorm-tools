@@ -28,7 +28,8 @@ def test_cli_build_fails_if_source_not_dir(tmp_path: Path) -> None:
     fake = tmp_path / "no_existe"
     res = runner.invoke(app, ["build", str(fake)])
     assert res.exit_code != 0
-    assert "no es un directorio válido" in res.output
+    # Rich parte la línea según el ancho de la terminal (y la ruta temporal es larga).
+    assert "no es un directorio válido" in " ".join(res.output.split())
 
 
 def test_cli_validate_fails_if_path_not_exists(tmp_path: Path) -> None:

@@ -10,6 +10,7 @@ from typing import Any
 
 import yaml
 
+from .gift_quiz import parsear_gift
 from .models import Course, Item, Organization, Resource, ScormVersion
 
 
@@ -184,76 +185,42 @@ pre { background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 6px; ov
 # ============================================================================
 
 def parse_gift_questions(gift_text: str) -> list[dict[str, Any]]:
-    """Parsea preguntas básicas en formato GIFT (opción múltiple y V/F)."""
-    questions: list[dict[str, Any]] = []
+    """Parsea un banco GIFT a las preguntas que el cuestionario sabe corregir.
 
-    # Divide preguntas separadas por líneas en blanco dobles
-    blocks = [b.strip() for b in re.split(r"\n\s*\n", gift_text) if b.strip()]
-
-    for block in blocks:
-        # Extraer título si existe ::Titulo::
-        title = ""
-        m_title = re.match(r"^::(.*?)::(.*)", block, re.DOTALL)
-        if m_title:
-            title = m_title.group(1).strip()
-            rest = m_title.group(2).strip()
-        else:
-            rest = block
-
-        # Buscar el bloque de respuestas { ... }
-        m_body = re.search(r"^(.*?)\{(.*?)\}(.*)$", rest, re.DOTALL)
-        if not m_body:
-            continue
-
-        prompt = m_body.group(1).strip()
-        answers_raw = m_body.group(2).strip()
-
-        # Chequear si es True/False: {T}, {TRUE}, {F}, {FALSE}
-        if answers_raw.upper() in ("T", "TRUE"):
-            questions.append({
-                "title": title or "Verdadero o Falso",
-                "prompt": prompt,
-                "type": "true_false",
-                "correct": True,
-            })
-        elif answers_raw.upper() in ("F", "FALSE"):
-            questions.append({
-                "title": title or "Verdadero o Falso",
-                "prompt": prompt,
-                "type": "true_false",
-                "correct": False,
-            })
-        else:
-            # Opción múltiple con =Correcta y ~Incorrecta
-            options = []
-            opts_raw = re.findall(r"([=~])([^=~#]+)", answers_raw)
-            for marker, text in opts_raw:
-                is_correct = (marker == "=")
-                options.append({"text": text.strip(), "correct": is_correct})
-
-            if options:
-                questions.append({
-                    "title": title or "Opción Múltiple",
-                    "prompt": prompt,
-                    "type": "multiple_choice",
-                    "options": options,
-                })
-
-    return questions
+    Las que no se pueden representar se descartan de esta lista; `parsear_gift` devuelve además
+    cuáles fueron y por qué (`gift_to_scorm_sco` lo informa).
+    """
+    return parsear_gift(gift_text).preguntas
 
 
-def gift_to_scorm_sco(gift_path: Path, target_dir: Path, title: str = "Cuestionario SCORM") -> Course:
-    """Convierte un banco de preguntas GIFT en un módulo SCO interactivo autoevaluable."""
+def gift_to_scorm_sco(
+    gift_path: Path,
+    target_dir: Path,
+    title: str = "Cuestionario SCORM",
+    avisos: list[str] | None = None,
+) -> Course:
+    """Convierte un banco de preguntas GIFT en un módulo SCO interactivo autoevaluable.
+
+    Si se pasa `avisos`, se le agrega un mensaje por cada pregunta que no se pudo incluir.
+    """
     if not gift_path.exists():
         raise FileNotFoundError(f"No existe el archivo GIFT: {gift_path}")
 
     gift_content = gift_path.read_text(encoding="utf-8", errors="replace")
-    questions = parse_gift_questions(gift_content)
+    leidas = parsear_gift(gift_content)
+    questions = leidas.preguntas
+    if avisos is not None:
+        avisos.extend(f"Se omitió «{o['titulo']}»: {o['motivo']}." for o in leidas.omitidas)
     if not questions:
-        raise ValueError("No se encontraron preguntas válidas en el archivo GIFT.")
+        detalle = "; ".join(f"«{o['titulo']}»: {o['motivo']}" for o in leidas.omitidas)
+        raise ValueError(
+            "No se encontraron preguntas válidas en el archivo GIFT."
+            + (f" Omitidas: {detalle}." if detalle else "")
+        )
 
     target_dir.mkdir(parents=True, exist_ok=True)
-    questions_json = json.dumps(questions, ensure_ascii=False)
+    # `</` dentro de un texto cerraría el <script> que lo contiene.
+    questions_json = json.dumps(questions, ensure_ascii=False).replace("</", "<\\/")
 
     html_content = f"""<!DOCTYPE html>
 <html lang="es">
@@ -292,13 +259,34 @@ def gift_to_scorm_sco(gift_path: Path, target_dir: Path, title: str = "Cuestiona
         q.options.forEach(function(opt, j) {{
           div.innerHTML += '<label><input type="radio" name="q' + i + '" value="' + j + '"> ' + opt.text + '</label><br>';
         }});
+      }} else if (q.type === 'short_answer' || q.type === 'numeric') {{
+        div.innerHTML += '<input type="text" name="q' + i + '" autocomplete="off" placeholder="Tu respuesta">';
       }}
       container.appendChild(div);
     }});
 
     document.getElementById('btn-evaluar').addEventListener('click', function() {{
       var correctas = 0;
+      function normalizar(t) {{ return t.trim().toLowerCase().replace(/\\s+/g, ' '); }}
+      function numericaCorrecta(q, texto) {{
+        var v = parseFloat(texto.trim().replace(',', '.'));
+        if (isNaN(v)) return false;
+        return q.answers.some(function(a) {{
+          if (a.min !== undefined) return v >= a.min && v <= a.max;
+          return Math.abs(v - a.value) <= a.tolerance + 1e-9;
+        }});
+      }}
       questions.forEach(function(q, i) {{
+        if (q.type === 'short_answer' || q.type === 'numeric') {{
+          var caja = document.querySelector('input[name="q' + i + '"]');
+          if (!caja || !caja.value.trim()) return;
+          if (q.type === 'short_answer') {{
+            if (q.answers.some(function(a) {{ return normalizar(a) === normalizar(caja.value); }})) correctas++;
+          }} else if (numericaCorrecta(q, caja.value)) {{
+            correctas++;
+          }}
+          return;
+        }}
         var sel = document.querySelector('input[name="q' + i + '"]:checked');
         if (!sel) return;
         if (q.type === 'true_false') {{

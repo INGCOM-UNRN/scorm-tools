@@ -406,12 +406,15 @@ def cmd_from_gift(
     ),
 ) -> None:
     """Convertí un banco de preguntas GIFT (Moodle) en un módulo SCORM interactivo autoevaluable."""
+    avisos: list[str] = []
     try:
-        course = gift_to_scorm_sco(gift_file, target, title=title)
+        course = gift_to_scorm_sco(gift_file, target, title=title, avisos=avisos)
     except Exception as exc:
         err_console.print(f"[red]Error al procesar archivo GIFT:[/red] {exc}")
         raise typer.Exit(1) from exc
 
+    for aviso in avisos:
+        err_console.print(f"[yellow]Aviso:[/yellow] {aviso}")
     console.print(f"[green]Cuestionario SCORM generado en[/green] {target}")
     if build:
         zip_out = target.with_suffix(".zip")
