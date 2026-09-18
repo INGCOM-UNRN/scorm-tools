@@ -315,4 +315,6 @@ def test_cli_playground(tmp_path: Path) -> None:
     assert (target_dir / "index.html").exists()
     assert target_dir.with_suffix(".zip").exists()
     html = (target_dir / "index.html").read_text(encoding="utf-8")
-    assert "clang-wasm" in html
+    # El playground no compila nada: no debe fingir que lo hace (SCORM-D0301).
+    assert "clang-wasm" not in html
+    assert "daedalus compile" in html

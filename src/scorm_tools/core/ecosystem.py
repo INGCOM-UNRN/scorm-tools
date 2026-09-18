@@ -81,12 +81,14 @@ int main(void) {{
   </main>
   <script>
     document.getElementById('btn-completar').addEventListener('click', function() {{
+      // El estudiante declara haber hecho el ejercicio: eso es "completado",
+      // no "aprobado". Marcar passed acá ponía un aprobado en el LMS sin que
+      // nadie evaluara la solución.
       if (window.API_1484_11) {{
         window.API_1484_11.SetValue('cmi.completion_status', 'completed');
-        window.API_1484_11.SetValue('cmi.success_status', 'passed');
         window.API_1484_11.Commit('');
       }} else if (window.API) {{
-        window.API.LMSSetValue('cmi.core.lesson_status', 'passed');
+        window.API.LMSSetValue('cmi.core.lesson_status', 'completed');
         window.API.LMSCommit('');
       }}
       this.textContent = '✓ Ejercicio registrado';
@@ -633,6 +635,19 @@ def parse_idkfa_template(content: str) -> dict[str, Any]:
             if trimmed:
                 options.append(trimmed)
 
+    # La plantilla declara la respuesta correcta en /*correcta*/. Ignorarla era
+    # la razón por la que la actividad no podía evaluar nada.
+    correcta_match = re.search(r"/\*correcta\s*\n(.*?)\*/", content, re.DOTALL)
+    correcta = ""
+    if correcta_match:
+        for line in correcta_match.group(1).splitlines():
+            trimmed = line.strip()
+            # Las líneas que arrancan con `#` son expresiones que idkfa evalúa
+            # con los valores sorteados; acá no hay forma de resolverlas.
+            if trimmed and not trimmed.startswith("#"):
+                correcta = trimmed
+                break
+
     consigna_match = re.search(r"//\s*(.*?)\n#include", content, re.DOTALL)
     prompt = consigna_match.group(1).strip() if consigna_match else "¿Cuál es la salida del programa?"
 
@@ -647,6 +662,7 @@ def parse_idkfa_template(content: str) -> dict[str, Any]:
         "prompt": prompt,
         "code": code,
         "options": options or ["Salida esperada", "Error de compilación", "0"],
+        "correcta": correcta,
     }
 
 
@@ -658,8 +674,71 @@ def idkfa_to_scorm_tracing(template_path: Path, target_dir: Path) -> Course:
     content = template_path.read_text(encoding="utf-8", errors="replace")
     data = parse_idkfa_template(content)
 
+    # Si la plantilla declara la respuesta correcta, la actividad se autoevalúa.
+    # Si no —porque idkfa la resuelve recién al sortear las variables—, se
+    # registra la respuesta sin emitir veredicto: es preferible que el docente
+    # corrija a que el LMS reciba un "aprobado" que nadie evaluó.
+    autoevaluable = bool(data["correcta"])
+    opciones = list(data["options"])
+    if autoevaluable:
+        # La correcta se mezcla entre los distractores en una posición estable
+        # por plantilla, para que no quede siempre al final.
+        indice_correcto = sum(ord(c) for c in data["name"]) % (len(opciones) + 1)
+        opciones.insert(indice_correcto, data["correcta"])
+    else:
+        indice_correcto = -1
+    data = {**data, "options": opciones}
+
     target_dir.mkdir(parents=True, exist_ok=True)
     cid = re.sub(r"[^a-zA-Z0-9]+", "-", data["name"].lower()).strip("-") or "tracing-c"
+
+    if autoevaluable:
+        script_evaluacion = """var OPCION_CORRECTA = %d;
+
+    document.getElementById('btn-evaluar').addEventListener('click', function() {
+      var sel = document.querySelector('input[name="opt"]:checked');
+      if (!sel) return;
+      this.disabled = true;
+
+      var acerto = parseInt(sel.value, 10) === OPCION_CORRECTA;
+      var puntaje = acerto ? '100' : '0';
+      document.getElementById('feedback').textContent = acerto
+        ? '\u2713 Respuesta correcta'
+        : '\u2717 Respuesta incorrecta';
+
+      if (window.API_1484_11) {
+        window.API_1484_11.SetValue('cmi.score.raw', puntaje);
+        window.API_1484_11.SetValue('cmi.completion_status', 'completed');
+        window.API_1484_11.SetValue('cmi.success_status', acerto ? 'passed' : 'failed');
+        window.API_1484_11.Commit('');
+      } else if (window.API) {
+        window.API.LMSSetValue('cmi.core.score.raw', puntaje);
+        window.API.LMSSetValue('cmi.core.lesson_status', acerto ? 'passed' : 'failed');
+        window.API.LMSCommit('');
+      }
+    });""" % indice_correcto
+    else:
+        script_evaluacion = """document.getElementById('btn-evaluar').addEventListener('click', function() {
+      var sel = document.querySelector('input[name="opt"]:checked');
+      if (!sel) return;
+      this.disabled = true;
+
+      // La plantilla no declara la respuesta correcta (idkfa la resuelve al
+      // sortear las variables): se deja constancia de lo elegido y corrige el
+      // equipo docente. Emitir un veredicto acá seria inventarlo.
+      document.getElementById('feedback').textContent =
+        'Respuesta registrada. La correccion la realiza el equipo docente.';
+
+      if (window.API_1484_11) {
+        window.API_1484_11.SetValue('cmi.suspend_data', 'opcion=' + sel.value);
+        window.API_1484_11.SetValue('cmi.completion_status', 'completed');
+        window.API_1484_11.Commit('');
+      } else if (window.API) {
+        window.API.LMSSetValue('cmi.suspend_data', 'opcion=' + sel.value);
+        window.API.LMSSetValue('cmi.core.lesson_status', 'completed');
+        window.API.LMSCommit('');
+      }
+    });"""
 
     options_html = ""
     for i, opt in enumerate(data["options"]):
@@ -699,23 +778,7 @@ def idkfa_to_scorm_tracing(template_path: Path, target_dir: Path) -> Course:
     <div id="feedback" class="feedback"></div>
   </div>
   <script>
-    document.getElementById('btn-evaluar').addEventListener('click', function() {{
-      var sel = document.querySelector('input[name="opt"]:checked');
-      if (!sel) return;
-      document.getElementById('feedback').textContent = '✓ Respuesta registrada en SCORM';
-      this.disabled = true;
-
-      if (window.API_1484_11) {{
-        window.API_1484_11.SetValue('cmi.score.raw', '100');
-        window.API_1484_11.SetValue('cmi.completion_status', 'completed');
-        window.API_1484_11.SetValue('cmi.success_status', 'passed');
-        window.API_1484_11.Commit('');
-      }} else if (window.API) {{
-        window.API.LMSSetValue('cmi.core.score.raw', '100');
-        window.API.LMSSetValue('cmi.core.lesson_status', 'passed');
-        window.API.LMSCommit('');
-      }}
-    }});
+    {script_evaluacion}
   </script>
 </body>
 </html>
@@ -785,7 +848,8 @@ def scaffold_wasm_playground(target_dir: Path, title: str = "Playground C WebAss
 <body>
   <div class="container">
     <h1>{html.escape(title)}</h1>
-    <p>Escribí tu código C y ejecutalo directamente en el navegador mediante el motor Wasm.</p>
+    <p>Escribí y revisá tu código C. Este paquete no incluye un compilador: para
+    compilarlo y ejecutarlo usá <code>daedalus</code> en tu equipo.</p>
     <textarea id="editor">#include &lt;stdio.h&gt;
 
 int main(void) {{
@@ -793,21 +857,30 @@ int main(void) {{
     return 0;
 }}</textarea>
     <div class="toolbar">
-      <button id="btn-run" class="btn">▶ Compilar y Ejecutar (Wasm)</button>
+      <button id="btn-copiar" class="btn">Copiar código</button>
     </div>
-    <div id="terminal">[Terminal lista para compilación]</div>
+    <div id="terminal">[Sin compilador embebido: copiá el código y compilalo con `daedalus compile`]</div>
   </div>
   <script>
-    document.getElementById('btn-run').addEventListener('click', function() {{
+    document.getElementById('btn-copiar').addEventListener('click', function() {{
+      var codigo = document.getElementById('editor').value;
       var term = document.getElementById('terminal');
-      term.textContent = 'Compilando código C con clang-wasm...\\nEjecución completada con código 0.\\nSalida:\\n¡Hola desde el Playground C WebAssembly!';
+      if (navigator.clipboard) {{
+        navigator.clipboard.writeText(codigo);
+        term.textContent = 'Código copiado. Compilalo con: daedalus compile archivo.c -o programa';
+      }} else {{
+        term.textContent = 'Copiá el código del editor y compilalo con: daedalus compile archivo.c -o programa';
+      }}
 
+      // Un playground es una zona de práctica, no una evaluación: marcar la
+      // actividad como vista alcanza. Antes fijaba success_status='passed' sin
+      // compilar ni evaluar nada, y ese "aprobado" viajaba al seguimiento que
+      // dredd-sync consolida para el docente.
       if (window.API_1484_11) {{
         window.API_1484_11.SetValue('cmi.completion_status', 'completed');
-        window.API_1484_11.SetValue('cmi.success_status', 'passed');
         window.API_1484_11.Commit('');
       }} else if (window.API) {{
-        window.API.LMSSetValue('cmi.core.lesson_status', 'passed');
+        window.API.LMSSetValue('cmi.core.lesson_status', 'completed');
         window.API.LMSCommit('');
       }}
     }});
