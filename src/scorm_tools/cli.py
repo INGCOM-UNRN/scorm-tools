@@ -47,6 +47,16 @@ console = Console()
 err_console = Console(stderr=True)
 
 
+SCHEMA_VERSION = "1.0.0"
+
+
+def _emit_json(comando: str, datos: dict) -> None:
+    """JSON versionado por stdout (sin formato Rich, que podría cortar líneas)."""
+    payload = {"schema_version": SCHEMA_VERSION, "herramienta": "scorm-tools", "comando": comando}
+    payload.update(datos)
+    typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
+
+
 def version_callback(value: bool) -> None:
     if value:
         console.print(f"scorm-tools {__version__}")
@@ -69,8 +79,18 @@ def main_callback(
 
 
 @app.command()
-def doctor() -> None:
+def doctor(
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
+) -> None:
     """Verificá el estado del entorno, dependencias y esquemas XSD de scorm-tools."""
+    if json_output:
+        import contextlib, io
+        with contextlib.redirect_stdout(io.StringIO()):
+            ok = ejecutar_diagnostico_doctor(Console(file=io.StringIO()))
+        _emit_json("doctor", {"ok": ok})
+        if not ok:
+            raise typer.Exit(1)
+        return
     ok = ejecutar_diagnostico_doctor(console)
     if not ok:
         raise typer.Exit(1)
@@ -88,6 +108,7 @@ def init(
     identifier: Optional[str] = typer.Option(
         None, "--id", help="Identificador único del curso (por defecto se deriva del título)."
     ),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Creá un curso SCORM de ejemplo listo para editar."""
     try:
@@ -96,6 +117,9 @@ def init(
         err_console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(1) from exc
 
+    if json_output:
+        _emit_json("init", {"directorio": str(target), "titulo": title, "version": version.value})
+        return
     console.print(f"[green]Curso creado en[/green] {target}")
     console.print("Editá [bold]scorm.yaml[/bold] y el contenido del SCO, luego ejecutá:")
     console.print(f"  scorm-tools build {target} -o {target.name}.zip")
@@ -122,6 +146,7 @@ def build(
     completed_on_view: bool = typer.Option(
         False, "--completed-on-view", help="Marcar automáticamente el SCO como completado al abrirse."
     ),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Generá imsmanifest.xml y empaquetá el curso en un .zip para Moodle."""
     if not source.is_dir():
@@ -143,16 +168,23 @@ def build(
         err_console.print(f"[red]Error en scorm.yaml:[/red] {exc}")
         raise typer.Exit(1) from exc
 
-    console.print(
-        f"[green]Paquete generado:[/green] {output_zip} "
-        f"(SCORM {course.version.value}, identifier={course.identifier})"
-    )
+    if not json_output:
+        console.print(
+            f"[green]Paquete generado:[/green] {output_zip} "
+            f"(SCORM {course.version.value}, identifier={course.identifier})"
+        )
 
-    if validate:
-        report = validate_package(output_zip)
+    report = validate_package(output_zip) if validate else None
+    if json_output:
+        _emit_json("build", {
+            "paquete": str(output_zip), "version": course.version.value,
+            "identifier": course.identifier,
+            "validacion": None if report is None else {"ok": report.ok},
+        })
+    elif report is not None:
         _print_report(report)
-        if not report.ok:
-            raise typer.Exit(1)
+    if report is not None and not report.ok:
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -380,6 +412,7 @@ def cmd_from_deckard(
     build: bool = typer.Option(
         False, "--build", "-b", help="Compilar automáticamente a archivo .zip tras generar los fuentes."
     ),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Convertí una guía de ejercicios de Deckard a un curso SCORM interactivo."""
     try:
@@ -388,10 +421,16 @@ def cmd_from_deckard(
         err_console.print(f"[red]Error al convertir guía Deckard:[/red] {exc}")
         raise typer.Exit(1) from exc
 
-    console.print(f"[green]Curso SCORM generado en[/green] {target} con {len(course.organization().items)} ejercicios.")
+    zip_out = None
     if build:
         zip_out = target.with_suffix(".zip")
         build_package(target, zip_out)
+    if json_output:
+        _emit_json("from-deckard", {"directorio": str(target), "ejercicios": len(course.organization().items),
+                                    "zip": str(zip_out) if zip_out else None})
+        return
+    console.print(f"[green]Curso SCORM generado en[/green] {target} con {len(course.organization().items)} ejercicios.")
+    if zip_out:
         console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
 
 
@@ -403,6 +442,7 @@ def cmd_from_gift(
     build: bool = typer.Option(
         False, "--build", "-b", help="Compilar automáticamente a archivo .zip tras generar los fuentes."
     ),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Convertí un banco de preguntas GIFT (Moodle) en un módulo SCORM interactivo autoevaluable."""
     avisos: list[str] = []
@@ -414,10 +454,16 @@ def cmd_from_gift(
 
     for aviso in avisos:
         err_console.print(f"[yellow]Aviso:[/yellow] {aviso}")
-    console.print(f"[green]Cuestionario SCORM generado en[/green] {target}")
+    zip_out = None
     if build:
         zip_out = target.with_suffix(".zip")
         build_package(target, zip_out)
+    if json_output:
+        _emit_json("from-gift", {"directorio": str(target), "avisos": avisos,
+                                 "zip": str(zip_out) if zip_out else None})
+        return
+    console.print(f"[green]Cuestionario SCORM generado en[/green] {target}")
+    if zip_out:
         console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
 
 
@@ -457,6 +503,7 @@ def cmd_audit_c(
 def cmd_dredd_sync(
     tracking_file: Path = typer.Argument(..., help="Archivo JSON con registros de tracking SCORM exportados."),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Archivo donde guardar el reporte para Dredd."),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Procesá registros de tracking de Moodle SCORM para integrarlos al calificador docente Dredd."""
     if not tracking_file.exists():
@@ -471,6 +518,12 @@ def cmd_dredd_sync(
     except Exception as exc:
         err_console.print(f"[red]Error al parsear tracking:[/red] {exc}")
         raise typer.Exit(1) from exc
+
+    if output:
+        output.write_text(json.dumps(grades, indent=2, ensure_ascii=False), encoding="utf-8")
+    if json_output:
+        _emit_json("dredd-sync", {"calificaciones": grades, "salida": str(output) if output else None})
+        return
 
     table = Table(title="Calificaciones SCORM Procesadas para Dredd", border_style="cyan")
     table.add_column("Estudiante / Legajo", style="bold white")
@@ -490,7 +543,6 @@ def cmd_dredd_sync(
     console.print(table)
 
     if output:
-        output.write_text(json.dumps(grades, indent=2, ensure_ascii=False), encoding="utf-8")
         console.print(f"[green]Reporte Dredd exportado en:[/green] {output}")
 
 
@@ -498,6 +550,7 @@ def cmd_dredd_sync(
 def cmd_diagram_memory(
     trace_file: Path = typer.Argument(..., help="Archivo JSON con la traza de memoria (frames y heap)."),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Archivo de salida para el diagrama Mermaid."),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Generá un diagrama Mermaid de memoria Stack y Heap (Bishop/Sebastian) para lecciones SCORM."""
     if not trace_file.exists():
@@ -515,6 +568,10 @@ def cmd_diagram_memory(
 
     if output:
         output.write_text(diagram, encoding="utf-8")
+    if json_output:
+        _emit_json("diagram-memory", {"salida": str(output) if output else None,
+                                      "diagrama": None if output else diagram})
+    elif output:
         console.print(f"[green]Diagrama Mermaid guardado en:[/green] {output}")
     else:
         console.print(diagram)
@@ -525,6 +582,7 @@ def cmd_from_idkfa(
     template: Path = typer.Argument(..., help="Plantilla C de ejercicio de tracing de IDKFA."),
     target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
     build: bool = typer.Option(False, "--build", "-b", help="Compilar automáticamente a archivo .zip."),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Convertí una plantilla de tracing C de IDKFA a una lección interactiva SCORM autoevaluable."""
     try:
@@ -533,10 +591,15 @@ def cmd_from_idkfa(
         err_console.print(f"[red]Error al convertir plantilla IDKFA:[/red] {exc}")
         raise typer.Exit(1) from exc
 
-    console.print(f"[green]Lección SCORM generada en[/green] {target}")
+    zip_out = None
     if build:
         zip_out = target.with_suffix(".zip")
         build_package(target, zip_out)
+    if json_output:
+        _emit_json("from-idkfa", {"directorio": str(target), "zip": str(zip_out) if zip_out else None})
+        return
+    console.print(f"[green]Lección SCORM generada en[/green] {target}")
+    if zip_out:
         console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
 
 
@@ -545,13 +608,19 @@ def cmd_playground(
     target: Path = typer.Argument(..., help="Directorio destino del módulo Playground Wasm."),
     title: str = typer.Option("Playground C WebAssembly", "--title", "-t", help="Título del módulo."),
     build: bool = typer.Option(False, "--build", "-b", help="Compilar automáticamente a archivo .zip."),
+    json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Generá un módulo SCORM interactivo con compilador C WebAssembly en el navegador."""
     course = scaffold_wasm_playground(target, title=title)
-    console.print(f"[green]Playground Wasm generado en[/green] {target}")
+    zip_out = None
     if build:
         zip_out = target.with_suffix(".zip")
         build_package(target, zip_out)
+    if json_output:
+        _emit_json("playground", {"directorio": str(target), "zip": str(zip_out) if zip_out else None})
+        return
+    console.print(f"[green]Playground Wasm generado en[/green] {target}")
+    if zip_out:
         console.print(f"[green]Paquete .zip compilado en:[/green] {zip_out}")
 
 
