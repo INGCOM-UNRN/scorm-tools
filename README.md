@@ -51,7 +51,7 @@ El comando queda disponible como `uv run scorm-tools ...`, o bien
 ### `init` — crear un curso de ejemplo
 
 ```bash
-uv run scorm-tools init ./mi-curso --title "Introducción a Python" --version 2004-4ed
+uv run scorm-tools init ./mi-curso --title "Introducción a Python" --scorm-version 2004-4ed
 ```
 
 Genera:
@@ -61,7 +61,7 @@ Genera:
   comunicación SCORM (API 1.2 y 2004) ya integrado (`ScormAPI.init()`,
   `setCompleted()`, `setScore()`, `commit()`, `terminate()`).
 
-`--version` acepta `1.2`, `2004-3ed` o `2004-4ed`.
+`--scorm-version` acepta `1.2`, `2004-3ed` o `2004-4ed`.
 
 ### `build` — generar el `imsmanifest.xml` y empaquetar
 

@@ -318,3 +318,11 @@ def test_cli_playground(tmp_path: Path) -> None:
     # El playground no compila nada: no debe fingir que lo hace (SCORM-D0301).
     assert "clang-wasm" not in html
     assert "daedalus compile" in html
+
+
+def test_version_solo_significa_version_del_paquete():
+    """SCORM-D0401: --version no debe ser alias de --scorm-version en init/from-deckard."""
+    for cmd in ("init", "from-deckard"):
+        res = runner.invoke(app, [cmd, "--help"], env={"NO_COLOR": "1", "COLUMNS": "200"})
+        assert "--scorm-version" in res.output
+        assert "--version" not in res.output.replace("--scorm-version", "")

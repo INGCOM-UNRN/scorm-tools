@@ -83,7 +83,6 @@ def init(
     version: ScormVersion = typer.Option(
         ScormVersion.SCORM_2004_4ED,
         "--scorm-version",
-        "--version",
         help="Versión de SCORM (1.2 o 2004).",
     ),
     identifier: Optional[str] = typer.Option(
@@ -376,7 +375,7 @@ def cmd_from_deckard(
     guia: Path = typer.Argument(..., help="Archivo guia.yaml de ejercicios de Deckard."),
     target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
     version: ScormVersion = typer.Option(
-        ScormVersion.SCORM_2004_4ED, "--scorm-version", "--version", help="Versión SCORM (1.2 o 2004)."
+        ScormVersion.SCORM_2004_4ED, "--scorm-version", help="Versión SCORM (1.2 o 2004)."
     ),
     build: bool = typer.Option(
         False, "--build", "-b", help="Compilar automáticamente a archivo .zip tras generar los fuentes."
