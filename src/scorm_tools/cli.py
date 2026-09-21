@@ -415,18 +415,23 @@ def cmd_from_deckard(
     json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Convertí una guía de ejercicios de Deckard a un curso SCORM interactivo."""
+    avisos: list[str] = []
     try:
-        course = deckard_to_scorm(guia, target, version=version)
+        course = deckard_to_scorm(guia, target, version=version, avisos=avisos)
     except Exception as exc:
         err_console.print(f"[red]Error al convertir guía Deckard:[/red] {exc}")
         raise typer.Exit(1) from exc
+
+    for aviso in avisos:
+        err_console.print(f"[yellow]Aviso:[/yellow] {aviso}")
 
     zip_out = None
     if build:
         zip_out = target.with_suffix(".zip")
         build_package(target, zip_out)
     if json_output:
-        _emit_json("from-deckard", {"directorio": str(target), "ejercicios": len(course.organization().items),
+        _emit_json("from-deckard", {"directorio": str(target), "avisos": avisos,
+                                    "ejercicios": len(course.organization().items),
                                     "zip": str(zip_out) if zip_out else None})
         return
     console.print(f"[green]Curso SCORM generado en[/green] {target} con {len(course.organization().items)} ejercicios.")

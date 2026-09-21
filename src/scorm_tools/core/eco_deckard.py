@@ -19,12 +19,24 @@ def deckard_to_scorm(
     guia_path: Path,
     target_dir: Path,
     version: ScormVersion = ScormVersion.SCORM_2004_4ED,
+    avisos: list[str] | None = None,
 ) -> Course:
-    """Convierte una guía de ejercicios Deckard (guia.yaml) en un curso SCORM multi-SCO."""
+    """Convierte una guía de ejercicios Deckard (guia.yaml) en un curso SCORM multi-SCO.
+
+    El schema de deckard no está versionado, así que la lectura es por duck-typing
+    (`nombre|title`, `ejercicios[].id/minutos/bloom/tema`). Todo campo esperado que
+    falte se informa en `avisos` en vez de degradar en silencio a los defaults.
+    """
+    if avisos is None:
+        avisos = []
     if not guia_path.exists():
         raise FileNotFoundError(f"No existe el archivo de guía Deckard: {guia_path}")
 
     raw = yaml.safe_load(guia_path.read_text(encoding="utf-8")) or {}
+    if not isinstance(raw, dict):
+        raise ValueError("la guía Deckard debe ser un mapa YAML (nombre/ejercicios)")
+    if not (raw.get("nombre") or raw.get("title")):
+        avisos.append("la guía no define `nombre` ni `title`: se usa «Guía de Ejercicios»")
     titulo_guia = raw.get("nombre") or raw.get("title") or "Guía de Ejercicios"
     guia_id = re.sub(r"[^a-zA-Z0-9]+", "-", titulo_guia.lower()).strip("-") or "guia-deckard"
 
@@ -35,8 +47,13 @@ def deckard_to_scorm(
 
     # Plantilla HTML para cada ejercicio interactivo
     ejercicios_raw = raw.get("ejercicios", [])
+    if not ejercicios_raw:
+        avisos.append("la guía no tiene `ejercicios`: el curso queda vacío")
     for idx, ej in enumerate(ejercicios_raw, 1):
         ej_id = ej.get("id") or f"ejercicio-{idx}"
+        for campo, defecto in (("id", ej_id), ("minutos", 20), ("bloom", 2), ("tema", "General")):
+            if campo not in ej or ej.get(campo) in (None, ""):
+                avisos.append(f"ejercicio {idx}: falta `{campo}`, se usa {defecto!r}")
         minutos = ej.get("minutos", 20)
         bloom = ej.get("bloom", 2)
         tema = ej.get("tema", "General")
