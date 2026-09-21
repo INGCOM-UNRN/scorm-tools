@@ -122,6 +122,10 @@ uv run scorm-tools check-size ./mi-curso
 # Generar configuración recomendada para actividad SCORM en Moodle
 uv run scorm-tools moodle-config ./mi-curso
 
+# Nota: `from-gift` usa un parser GIFT propio (soporta MC, V/F, respuesta corta y
+# numérica; avisa de lo que no puede representar) porque moodle-toolbox no puede
+# importarse desde un `uv tool` aislado. tests/test_paridad_gift_moodle_toolbox.py
+# verifica la paridad con el parser del dueño cuando ambos paquetes coexisten.
 # Generar módulos SCORM desde guías deckard o cuestionarios GIFT/idkfa
 uv run scorm-tools from-deckard guia.yaml -o ./scorm-guia
 uv run scorm-tools from-gift preguntas.gift -o ./scorm-preguntas
