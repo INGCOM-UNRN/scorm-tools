@@ -12,6 +12,7 @@ from rich.console import Console
 __version__ = "0.1.0"
 
 app = typer.Typer(
+    context_settings={"help_option_names": ["-h", "--help"]},
     name="scorm-tools",
     help="Herramientas para crear, empaquetar y validar contenido SCORM compatible con Moodle.",
     no_args_is_help=True,
@@ -42,6 +43,7 @@ def main_callback(
     version: bool = typer.Option(
         False,
         "--version",
+        "-v",
         "-V",
         help="Muestra la versión de scorm-tools y sale.",
         callback=version_callback,
