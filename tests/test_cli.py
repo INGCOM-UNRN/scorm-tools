@@ -322,7 +322,10 @@ def test_cli_playground(tmp_path: Path) -> None:
 
 def test_version_solo_significa_version_del_paquete():
     """SCORM-D0401: --version no debe ser alias de --scorm-version en init/from-deckard."""
+    import re
     for cmd in ("init", "from-deckard"):
         res = runner.invoke(app, [cmd, "--help"], env={"NO_COLOR": "1", "COLUMNS": "200"})
-        assert "--scorm-version" in res.output
-        assert "--version" not in res.output.replace("--scorm-version", "")
+        clean_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", res.output)
+        assert "--scorm-version" in clean_output
+        assert "--version" not in clean_output.replace("--scorm-version", "")
+
