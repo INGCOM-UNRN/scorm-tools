@@ -1,5 +1,7 @@
 # scorm-tools
 
+> 📖 **Manual de Usuario:** Para una guía exhaustiva de comandos, banderas, arquitectura y ejemplos, consultá el [Manual de Uso](MANUAL.md).
+
 Herramientas de línea de comandos, gestionadas con [`uv`](https://docs.astral.sh/uv/),
 para crear, gestionar y validar contenido compatible con el estándar **SCORM**
 (1.2 y 2004 3ra/4ta edición), listo para integrarse en plataformas LMS como
