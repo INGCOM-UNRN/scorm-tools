@@ -7,9 +7,8 @@ import json
 import typer
 from rich.console import Console
 
+from . import __version__
 from .errores import TyperConErrores
-
-__version__ = "0.1.0"
 
 # La app raíz muestra los errores de datos como mensajes (N-ECO-05).
 app = TyperConErrores(
