@@ -42,6 +42,15 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/scorm_tools"]
 
+[project.optional-dependencies]
+# Herramientas del ecosistema que se usan como biblioteca (N-ECO-01). Referencias git fijadas
+# a commits publicados; sin el extra se usa el camino propio (gcc, sin sandbox de nostromo…).
+ecosistema = [
+    "bishop @ git+https://github.com/INGCOM-UNRN-P1/bishop@c9133e6ea4523c37e2abbaf1d4791675287550bf",
+    "kaneda @ git+https://github.com/INGCOM-UNRN-P1/kaneda@ad2e1ee688eac0929d4e5b4dd424ffda42b0d9f2",
+    "spunkmeyer @ git+https://github.com/INGCOM-UNRN-P1/spunkmeyer@ec9cbd266f9d187c787f528997f1ae0c09dd8ff2",
+]
+
 [project.urls]
 Homepage = "https://github.com/INGCOM-UNRN-P1/scorm-tools"
 Repository = "https://github.com/INGCOM-UNRN-P1/scorm-tools.git"
@@ -55,3 +64,7 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.hatch.metadata]
+# Las dependencias del ecosistema son referencias directas a git (nunca por nombre en PyPI).
+allow-direct-references = true

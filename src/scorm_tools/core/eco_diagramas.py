@@ -19,15 +19,8 @@ def _to_bishop_snapshot(
     """Convierte estructuras crudas de stack/heap en SnapshotMemoria canónico de Bishop."""
     try:
         from bishop.core.models import BloqueHeap, SnapshotMemoria, StackFrameMemoria, VariableMemoria
-    except ImportError:
-        import sys
-        sibling = Path(__file__).resolve().parents[4] / "bishop" / "src"
-        if sibling.is_dir() and str(sibling) not in sys.path:
-            sys.path.insert(0, str(sibling))
-        try:
-            from bishop.core.models import BloqueHeap, SnapshotMemoria, StackFrameMemoria, VariableMemoria
-        except ImportError:
-            return None
+    except ImportError:  # sin el extra `ecosistema`
+        return None
 
     frames_b: list[StackFrameMemoria] = []
     for idx, f in enumerate(stack_frames):

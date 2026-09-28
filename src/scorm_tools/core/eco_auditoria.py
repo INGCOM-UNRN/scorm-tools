@@ -19,23 +19,15 @@ def _obtener_catalogo_kaneda() -> dict[str, dict[str, str]]:
     try:
         from kaneda.core.rules import CATALOGO_SEGURIDAD
         return CATALOGO_SEGURIDAD
-    except ImportError:
-        import sys
-        sibling = Path(__file__).resolve().parents[4] / "kaneda" / "src"
-        if sibling.is_dir() and str(sibling) not in sys.path:
-            sys.path.insert(0, str(sibling))
-        try:
-            from kaneda.core.rules import CATALOGO_SEGURIDAD
-            return CATALOGO_SEGURIDAD
-        except ImportError:
-            return {
-                "KAN001": {
-                    "titulo": "Uso de la función prohibida 'gets()'",
-                    "severidad": "CRITICO",
-                    "descripcion": "'gets()' no verifica los límites del búfer destino y es intrínsecamente vulnerable a desbordamientos de búfer (Buffer Overflow).",
-                    "sugerencia": "Reemplazá 'gets(buf)' por 'fgets(buf, sizeof(buf), stdin)'.",
-                }
+    except ImportError:  # sin el extra `ecosistema`
+        return {
+            "KAN001": {
+                "titulo": "Uso de la función prohibida 'gets()'",
+                "severidad": "CRITICO",
+                "descripcion": "'gets()' no verifica los límites del búfer destino y es intrínsecamente vulnerable a desbordamientos de búfer (Buffer Overflow).",
+                "sugerencia": "Reemplazá 'gets(buf)' por 'fgets(buf, sizeof(buf), stdin)'.",
             }
+        }
 
 
 def _obtener_catalogo_spunkmeyer() -> dict[str, dict[str, str]]:
@@ -43,27 +35,19 @@ def _obtener_catalogo_spunkmeyer() -> dict[str, dict[str, str]]:
     try:
         from spunkmeyer.core.detector import CATALOGO_ANTIPATRONES
         return CATALOGO_ANTIPATRONES
-    except ImportError:
-        import sys
-        sibling = Path(__file__).resolve().parents[4] / "spunkmeyer" / "src"
-        if sibling.is_dir() and str(sibling) not in sys.path:
-            sys.path.insert(0, str(sibling))
-        try:
-            from spunkmeyer.core.detector import CATALOGO_ANTIPATRONES
-            return CATALOGO_ANTIPATRONES
-        except ImportError:
-            return {
-                "0x300Ah": {
-                    "codigo": "0x300Ah", "alias": "AP001",
-                    "nombre": "Casteo redundante de malloc()",
-                    "mensaje": "Castear el retorno de 'malloc()' es innecesario en C y puede enmascarar la falta de #include <stdlib.h>.",
-                },
-                "0x4002h": {
-                    "codigo": "0x4002h", "alias": "AP002",
-                    "nombre": "Control de lectura con while(!feof())",
-                    "mensaje": "Usar '!feof(f)' como condición del bucle provoca procesar el último registro dos veces.",
-                },
-            }
+    except ImportError:  # sin el extra `ecosistema`
+        return {
+            "0x300Ah": {
+                "codigo": "0x300Ah", "alias": "AP001",
+                "nombre": "Casteo redundante de malloc()",
+                "mensaje": "Castear el retorno de 'malloc()' es innecesario en C y puede enmascarar la falta de #include <stdlib.h>.",
+            },
+            "0x4002h": {
+                "codigo": "0x4002h", "alias": "AP002",
+                "nombre": "Control de lectura con while(!feof())",
+                "mensaje": "Usar '!feof(f)' como condición del bucle provoca procesar el último registro dos veces.",
+            },
+        }
 
 
 def extract_and_audit_c_code(dir_path: Path) -> list[dict[str, Any]]:
