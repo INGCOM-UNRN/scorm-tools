@@ -7,11 +7,12 @@ import json
 import typer
 from rich.console import Console
 
-
+from .errores import TyperConErrores
 
 __version__ = "0.1.0"
 
-app = typer.Typer(
+# La app raíz muestra los errores de datos como mensajes (N-ECO-05).
+app = TyperConErrores(
     context_settings={"help_option_names": ["-h", "--help"]},
     name="scorm-tools",
     help="Herramientas para crear, empaquetar y validar contenido SCORM compatible con Moodle.",
