@@ -1,6 +1,6 @@
 [project]
 name = "scorm-tools"
-version = "0.1.0"
+version = "0.2.0"
 description = "Herramientas para crear, empaquetar y validar contenido SCORM (1.2 / 2004) para Moodle."
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
