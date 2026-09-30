@@ -8,9 +8,12 @@ import typer
 from rich.console import Console
 
 from . import __version__
-from .errores import TyperConErrores
+from yutani.cli import TyperConErrores
+from yutani.textos import traducir
 
 # La app raíz muestra los errores de datos como mensajes (N-ECO-05).
+# Ayuda y errores de Typer/Click en español, desde yutani (N-ECO-14).
+traducir()
 app = TyperConErrores(
     context_settings={"help_option_names": ["-h", "--help"]},
     name="scorm-tools",
