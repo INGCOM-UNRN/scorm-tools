@@ -176,3 +176,35 @@ Los esquemas XSD oficiales (IMS CP 1.1.2/1.1, ADL CP 1.2/1.3, ADL SEQ/NAV
 1.3, IMS Simple Sequencing 1.0) están vendorizados en
 `src/scorm_tools/schemas/` para que la validación funcione sin conexión a
 internet.
+
+<!-- p1:referencia:inicio — generado por p1-tools/scripts/readme_generado.py: no editar a mano -->
+
+## Referencia rápida
+
+### Requisitos
+
+- Python ≥ 3.11 y [uv](https://docs.astral.sh/uv/getting-started/installation/).
+
+### Comandos
+
+| Comando | Descripción |
+|:--|:--|
+| `scorm-tools doctor` | Verificá el estado del entorno, dependencias y esquemas XSD de scorm-tools. |
+| `scorm-tools init` | Creá un curso SCORM de ejemplo listo para editar. |
+| `scorm-tools build` | Generá imsmanifest.xml y empaquetá el curso en un .zip para Moodle. |
+| `scorm-tools validate` | Validá un paquete SCORM contra el esquema XSD y reglas de Moodle. |
+| `scorm-tools info` | Mostrá un resumen de la estructura del curso definida en scorm.yaml. |
+| `scorm-tools check-sequencing` | Verificá el grafo de secuenciamiento IMSSS y detectá ciclos o actividades huérfanas. |
+| `scorm-tools check-size` | Audita el peso del paquete y su desglose por tipo de contenido para Moodle. |
+| `scorm-tools moodle-config` | Generá la configuración recomendada de actividad Moodle (moodle_settings.json). |
+| `scorm-tools from-deckard` | Convertí una guía de ejercicios de Deckard a un curso SCORM interactivo. |
+| `scorm-tools from-gift` | Convertí un banco de preguntas GIFT (Moodle) en un módulo SCORM interactivo autoevaluable. |
+| `scorm-tools audit-c` | Auditá fragmentos de código C embebidos en el contenido SCORM contra reglas Ripley. |
+| `scorm-tools dredd-sync` | Procesá registros de tracking de Moodle SCORM para integrarlos al calificador docente Dredd. |
+| `scorm-tools diagram-memory` | Generá un diagrama Mermaid de memoria Stack y Heap (Bishop/Sebastian) para lecciones SCORM. |
+| `scorm-tools from-idkfa` | Convertí una plantilla de tracing C de IDKFA a una lección interactiva SCORM autoevaluable. |
+| `scorm-tools playground` | Generá un módulo SCORM interactivo con compilador C WebAssembly en el navegador. |
+
+Ayuda de cada comando: `scorm-tools <comando> -h`.
+
+<!-- p1:referencia:fin -->
