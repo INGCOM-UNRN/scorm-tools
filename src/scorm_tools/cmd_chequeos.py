@@ -27,7 +27,7 @@ from ._cli_base import app, console, err_console
 
 @app.command("check-sequencing")
 def cmd_check_sequencing(
-    source: Path = typer.Argument(..., help="Directorio del curso (con scorm.yaml)."),
+    source: Path = typer.Argument(..., exists=True, help="Directorio del curso (con scorm.yaml)."),
     json_output: bool = typer.Option(
         False, "--json", help="Emite el análisis del grafo en formato JSON estructurado."
     ),
@@ -68,7 +68,7 @@ def cmd_check_sequencing(
 
 @app.command("check-size")
 def cmd_check_size(
-    path: Path = typer.Argument(..., help="Paquete SCORM: archivo .zip o directorio."),
+    path: Path = typer.Argument(..., exists=True, help="Paquete SCORM: archivo .zip o directorio."),
     max_mb: float = typer.Option(50.0, "--max-mb", help="Límite máximo permitido en MB (defecto: 50MB)."),
     json_output: bool = typer.Option(False, "--json", help="Emite el informe de tamaño en formato JSON estructurado."),
 ) -> None:
@@ -111,7 +111,7 @@ def cmd_check_size(
 
 @app.command("moodle-config")
 def cmd_moodle_config(
-    source: Path = typer.Argument(..., help="Directorio del curso (con scorm.yaml)."),
+    source: Path = typer.Argument(..., exists=True, help="Directorio del curso (con scorm.yaml)."),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Ruta donde guardar moodle_settings.json (opcional)."),
     grademethod: int = typer.Option(1, "--grade-method", help="Método de calificación: 1=Más alta, 2=Promedio, 3=Primer intento, 4=Último."),
     maxattempt: int = typer.Option(3, "--max-attempts", help="Número máximo de intentos permitidos."),

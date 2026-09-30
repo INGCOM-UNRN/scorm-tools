@@ -159,7 +159,7 @@ def validate(
 
 @app.command()
 def info(
-    source: Path = typer.Argument(..., help="Directorio del curso (con scorm.yaml)."),
+    source: Path = typer.Argument(..., exists=True, help="Directorio del curso (con scorm.yaml)."),
     json_output: bool = typer.Option(
         False, "--json", help="Emite la estructura del curso en formato JSON estructurado."
     ),

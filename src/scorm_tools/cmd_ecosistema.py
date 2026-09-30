@@ -27,7 +27,7 @@ from ._cli_base import _emit_json, app, console, err_console
 
 @app.command("from-deckard")
 def cmd_from_deckard(
-    guia: Path = typer.Argument(..., help="Archivo guia.yaml de ejercicios de Deckard."),
+    guia: Path = typer.Argument(..., exists=True, help="Archivo guia.yaml de ejercicios de Deckard."),
     target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
     version: ScormVersion = typer.Option(
         ScormVersion.SCORM_2004_4ED, "--scorm-version", help="Versión SCORM (1.2 o 2004)."
@@ -64,7 +64,7 @@ def cmd_from_deckard(
 
 @app.command("from-gift")
 def cmd_from_gift(
-    gift_file: Path = typer.Argument(..., help="Archivo de preguntas en formato GIFT."),
+    gift_file: Path = typer.Argument(..., exists=True, help="Archivo de preguntas en formato GIFT."),
     target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
     title: str = typer.Option("Cuestionario SCORM", "--title", "-t", help="Título del cuestionario."),
     build: bool = typer.Option(
@@ -97,7 +97,7 @@ def cmd_from_gift(
 
 @app.command("audit-c")
 def cmd_audit_c(
-    source: Path = typer.Argument(..., help="Directorio del curso SCORM a auditar."),
+    source: Path = typer.Argument(..., exists=True, help="Directorio del curso SCORM a auditar."),
     json_output: bool = typer.Option(
         False, "--json", help="Emite los hallazgos en formato JSON estructurado."
     ),
@@ -129,7 +129,7 @@ def cmd_audit_c(
 
 @app.command("dredd-sync")
 def cmd_dredd_sync(
-    tracking_file: Path = typer.Argument(..., help="Archivo JSON con registros de tracking SCORM exportados."),
+    tracking_file: Path = typer.Argument(..., exists=True, help="Archivo JSON con registros de tracking SCORM exportados."),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Archivo donde guardar el reporte para Dredd."),
     json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
@@ -176,7 +176,7 @@ def cmd_dredd_sync(
 
 @app.command("diagram-memory")
 def cmd_diagram_memory(
-    trace_file: Path = typer.Argument(..., help="Archivo JSON con la traza de memoria (frames y heap)."),
+    trace_file: Path = typer.Argument(..., exists=True, help="Archivo JSON con la traza de memoria (frames y heap)."),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Archivo de salida para el diagrama Mermaid."),
     json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
@@ -207,7 +207,7 @@ def cmd_diagram_memory(
 
 @app.command("from-idkfa")
 def cmd_from_idkfa(
-    template: Path = typer.Argument(..., help="Plantilla C de ejercicio de tracing de IDKFA."),
+    template: Path = typer.Argument(..., exists=True, help="Plantilla C de ejercicio de tracing de IDKFA."),
     target: Path = typer.Argument(..., help="Directorio destino del paquete SCORM."),
     build: bool = typer.Option(False, "--build", "-b", help="Compilar automáticamente a archivo .zip."),
     json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
