@@ -139,13 +139,16 @@ def validate(
     md_output: bool = typer.Option(
         False, "--md", "--output-md", help="Emite el informe en formato Markdown."
     ),
+    a11y: bool = typer.Option(
+        False, "--a11y", help="Revisa también la accesibilidad de las páginas HTML (WCAG 2.1)."
+    ),
 ) -> None:
     """Validá un paquete SCORM contra el esquema XSD y reglas de Moodle."""
     if not path.exists():
         err_console.print(f"[red]Error:[/red] {path} no existe.")
         raise typer.Exit(1)
 
-    report = validate_package(path)
+    report = validate_package(path, a11y=a11y)
     if json_output:
         typer.echo(report.to_json())
     elif md_output:

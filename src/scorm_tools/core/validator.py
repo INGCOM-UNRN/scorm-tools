@@ -30,6 +30,8 @@ class ValidationReport:
     scorm_version: str | None = None
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # Hallazgos de `--a11y` (None si no se pidió): también suman a errors y warnings.
+    accesibilidad: list[dict[str, Any]] | None = None
 
     @property
     def ok(self) -> bool:
@@ -48,6 +50,7 @@ class ValidationReport:
             "ok": self.ok,
             "errors": list(self.errors),
             "warnings": list(self.warnings),
+            **({"accesibilidad": list(self.accesibilidad)} if self.accesibilidad is not None else {}),
         }
 
     def to_json(self, indent: int = 2) -> str:
@@ -222,8 +225,21 @@ def _check_referenced_file(
         report.add_error(f"{context}: archivo referenciado no existe: '{href}'.")
 
 
-def validate_package(path: Path) -> ValidationReport:
-    """Valida un paquete SCORM (directorio o `.zip`) y devuelve un reporte."""
+def _auditar_accesibilidad(root_dir: Path, report: ValidationReport) -> None:
+    from .accesibilidad import auditar_paquete
+
+    hallazgos = auditar_paquete(root_dir)
+    report.accesibilidad = [h.to_dict() for h in hallazgos]
+    for h in hallazgos:
+        mensaje = f"Accesibilidad ({h.archivo}:{h.linea}, {h.regla}): {h.mensaje}"
+        (report.add_error if h.severidad == "error" else report.add_warning)(mensaje)
+
+
+def validate_package(path: Path, a11y: bool = False) -> ValidationReport:
+    """Valida un paquete SCORM (directorio o `.zip`) y devuelve un reporte.
+
+    Con `a11y`, revisa además la accesibilidad de sus páginas HTML (WCAG 2.1).
+    """
     report = ValidationReport()
     path = path.resolve()
 
@@ -243,6 +259,9 @@ def validate_package(path: Path) -> ValidationReport:
         else:
             report.add_error(f"Ruta no válida (ni directorio ni .zip): {path}")
             return report
+
+        if a11y:
+            _auditar_accesibilidad(root_dir, report)
 
         manifest_path = _find_manifest(root_dir, report)
         if manifest_path is None:

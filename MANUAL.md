@@ -13,6 +13,7 @@
 - Inicialización, validación formal y empaquetado de módulos de aprendizaje interactivo en formato SCORM para Moodle.
 - Soporte completo para especificaciones SCORM 1.2 y SCORM 2004 4th Edition.
 - Validación rigurosa de manifiestos `imsmanifest.xml` contra los esquemas XSD oficiales provistos localmente.
+- Accesibilidad de las páginas HTML del paquete (`validate --a11y`, criterios de WCAG 2.1): idioma, `<title>`, texto alternativo, orden de encabezados, enlaces, campos sin etiqueta, iframes, subtítulos y contraste.
 - Scaffolding declarativo de cursos a través de archivo de configuración `scorm.yaml`.
 - Generación de paquetes comprimidos `.zip` listos para desplegar en plataformas LMS.
 
@@ -145,10 +146,27 @@ Validá un paquete SCORM contra el esquema XSD y reglas de Moodle.
 | :--- | :--- | :--- | :--- |
 | `--json` | `bool` | `False` | Emite el informe en formato JSON estructurado. |
 | `--md`, `--output-md` | `bool` | `False` | Emite el informe en formato Markdown. |
+| `--a11y` | `bool` | `False` | Revisa también la accesibilidad de las páginas HTML (WCAG 2.1). |
+
+Con `--a11y` revisa además la accesibilidad de cada página HTML del paquete (WCAG 2.1, los mismos
+criterios que `myst-tools check-a11y` aplica al fuente MyST). Los errores invalidan el paquete y los
+avisos se informan; en `--json`, la lista `accesibilidad` trae cada hallazgo con archivo, línea, regla
+y severidad.
+
+| Regla | Severidad | Qué detecta |
+| :--- | :--- | :--- |
+| `idioma`, `titulo-pagina` | error | `<html>` sin `lang`; página sin `<title>`. |
+| `alt-faltante`, `alt-generico` | error, aviso | `<img>` sin `alt` (o `alt=""` si es decorativa); un alt que no describe nada. |
+| `encabezado-salto`, `titulo-repetido` | error, aviso | `<h2>` → `<h4>`; más de un `<h1>`. |
+| `enlace-generico`, `enlace-sin-texto` | error | Enlaces «acá» o «click aquí»; enlaces sin texto ni `aria-label`. |
+| `campo-sin-etiqueta` | error | `<input>`, `<select>` o `<textarea>` sin `<label>` ni `aria-label`. |
+| `iframe-sin-titulo`, `video-sin-subtitulos` | error, aviso | `<iframe>` sin `title`; `<video>` sin `<track kind="captions">`. |
+| `contraste` | error, o aviso sin fondo declarado | `style="color: …"` con contraste menor que 4.5:1. |
 
 #### Ejemplo de Invocación
 ```bash
 scorm-tools validate <path>
+scorm-tools validate mi-curso.zip --a11y
 ```
 
 ### `scorm-tools info`
