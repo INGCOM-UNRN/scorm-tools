@@ -55,3 +55,18 @@ def test_dredd_sync_json(tmp_path: Path):
 def test_doctor_json():
     d = _j(runner.invoke(app, ["doctor", "--json"]), "doctor")
     assert d["ok"] is True
+
+
+def test_json_y_markdown_sin_cortes_de_linea_de_rich(tmp_path):
+    """N-SCORM-01: el JSON de validate/info/check-* salía por la consola de Rich, que corta las líneas
+    largas al ancho de la terminal y metía saltos de línea dentro de los strings: JSON inválido."""
+    curso = tmp_path / "curso"
+    titulo = "Curso con un título largo " * 6
+    assert runner.invoke(app, ["init", str(curso), "--title", titulo.strip()]).exit_code == 0
+    datos = json.loads(runner.invoke(app, ["info", str(curso), "--json"]).stdout)
+    assert datos["title"] == titulo.strip()
+    paquete = tmp_path / "c.zip"
+    assert runner.invoke(app, ["build", str(curso), "-o", str(paquete)]).exit_code == 0
+    assert json.loads(runner.invoke(app, ["validate", str(paquete), "--json"]).stdout)["ok"] is True
+    assert json.loads(runner.invoke(app, ["check-size", str(paquete), "--json"]).stdout)
+    assert json.loads(runner.invoke(app, ["check-sequencing", str(curso), "--json"]).stdout)["valid"] is True

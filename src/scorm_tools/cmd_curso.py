@@ -147,9 +147,9 @@ def validate(
 
     report = validate_package(path)
     if json_output:
-        console.print(report.to_json())
+        typer.echo(report.to_json())
     elif md_output:
-        console.print(report.to_markdown())
+        typer.echo(report.to_markdown())
     else:
         _print_report(report)
 
@@ -196,7 +196,7 @@ def info(
                 for r in course.resources
             ],
         }
-        console.print(json.dumps(info_dict, indent=2, ensure_ascii=False))
+        typer.echo(json.dumps(info_dict, indent=2, ensure_ascii=False))
         return
 
     console.print(f"[bold]{course.title}[/bold] ({course.identifier})")

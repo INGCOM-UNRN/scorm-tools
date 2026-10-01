@@ -49,7 +49,7 @@ def cmd_check_sequencing(
             "errors": errors,
             "valid": len(errors) == 0 and graph_info["valid"],
         }
-        console.print(json.dumps(res, indent=2, ensure_ascii=False))
+        typer.echo(json.dumps(res, indent=2, ensure_ascii=False))
         if not res["valid"]:
             raise typer.Exit(1)
         return
@@ -84,7 +84,7 @@ def cmd_check_size(
         raise typer.Exit(1) from exc
 
     if json_output:
-        console.print(json.dumps(stats, indent=2, ensure_ascii=False))
+        typer.echo(json.dumps(stats, indent=2, ensure_ascii=False))
         if stats["exceeds_limit"]:
             raise typer.Exit(1)
         return
@@ -137,6 +137,6 @@ def cmd_moodle_config(
         console.print(f"[green]Configuración Moodle guardada en:[/green] {output}")
 
     if json_output or not output:
-        console.print(json.dumps(settings, indent=2, ensure_ascii=False))
+        typer.echo(json.dumps(settings, indent=2, ensure_ascii=False))
 
 

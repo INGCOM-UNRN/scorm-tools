@@ -105,7 +105,7 @@ def cmd_audit_c(
     """Auditá fragmentos de código C embebidos en el contenido SCORM contra reglas Ripley."""
     findings = extract_and_audit_c_code(source)
     if json_output:
-        console.print(json.dumps(findings, indent=2, ensure_ascii=False))
+        typer.echo(json.dumps(findings, indent=2, ensure_ascii=False))
         if findings:
             raise typer.Exit(1)
         return
