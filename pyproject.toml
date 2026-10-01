@@ -54,9 +54,9 @@ ecosistema = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/INGCOM-UNRN-P1/scorm-tools"
-Repository = "https://github.com/INGCOM-UNRN-P1/scorm-tools.git"
-Issues = "https://github.com/INGCOM-UNRN-P1/scorm-tools/issues"
+Homepage = "https://github.com/INGCOM-UNRN/scorm-tools"
+Repository = "https://github.com/INGCOM-UNRN/scorm-tools.git"
+Issues = "https://github.com/INGCOM-UNRN/scorm-tools/issues"
 
 [dependency-groups]
 dev = [
