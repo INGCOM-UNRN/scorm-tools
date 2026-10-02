@@ -48,9 +48,9 @@ packages = ["src/scorm_tools"]
 # Herramientas del ecosistema que se usan como biblioteca (N-ECO-01). Referencias git fijadas
 # a commits publicados; sin el extra se usa el camino propio (gcc, sin sandbox de nostromo…).
 ecosistema = [
-    "bishop @ git+https://github.com/INGCOM-UNRN-P1/bishop@c9133e6ea4523c37e2abbaf1d4791675287550bf",
-    "kaneda @ git+https://github.com/INGCOM-UNRN-P1/kaneda@ad2e1ee688eac0929d4e5b4dd424ffda42b0d9f2",
-    "spunkmeyer @ git+https://github.com/INGCOM-UNRN-P1/spunkmeyer@ec9cbd266f9d187c787f528997f1ae0c09dd8ff2",
+    "bishop @ git+https://github.com/INGCOM-UNRN-P1/bishop@8c8d07d9488f9da23a93a2492e3a2c1e1c2e89d0",
+    "kaneda @ git+https://github.com/INGCOM-UNRN-P1/kaneda@043649e8695b70e7acfdc0cbf99a8eff8d6451d9",
+    "spunkmeyer @ git+https://github.com/INGCOM-UNRN-P1/spunkmeyer@e89e4143bd43e4d626a3521125585dde4a3809a2",
 ]
 
 [project.urls]

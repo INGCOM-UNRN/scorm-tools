@@ -185,11 +185,20 @@ def cmd_diagram_memory(
         err_console.print(f"[red]Error:[/red] {trace_file} no existe.")
         raise typer.Exit(1)
 
+    # bishop es el dueño de los diagramas de memoria (N-ECO-12): si está instalado (extra
+    # `ecosistema`) dibuja él; si no, queda el diagrama propio. Este comando se va a retirar.
+    aviso = "diagram-memory pasa a bishop: usá `bishop diagram traza.json` (este comando se va a retirar)."
+    if not json_output:
+        err_console.print(f"[yellow]Aviso:[/yellow] {aviso}")
     try:
         raw = json.loads(trace_file.read_text(encoding="utf-8"))
-        frames = raw.get("stack", raw.get("frames", []))
-        heap = raw.get("heap", [])
-        diagram = generate_memory_diagram(frames, heap)
+        try:
+            from bishop.core.diagrama import generar_diagrama, snapshot_desde_dict
+        except ImportError:
+            frames = raw.get("stack", raw.get("frames", []))
+            diagram = generate_memory_diagram(frames, raw.get("heap", []))
+        else:
+            diagram = generar_diagrama(snapshot_desde_dict(raw, trace_file.name), "mermaid")
     except Exception as exc:
         err_console.print(f"[red]Error al procesar traza de memoria:[/red] {exc}")
         raise typer.Exit(1) from exc
@@ -198,7 +207,7 @@ def cmd_diagram_memory(
         output.write_text(diagram, encoding="utf-8")
     if json_output:
         _emit_json("diagram-memory", {"salida": str(output) if output else None,
-                                      "diagrama": None if output else diagram})
+                                      "diagrama": None if output else diagram, "aviso": aviso})
     elif output:
         console.print(f"[green]Diagrama Mermaid guardado en:[/green] {output}")
     else:
