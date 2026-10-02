@@ -246,8 +246,12 @@ def cmd_playground(
     title: str = typer.Option("Playground C WebAssembly", "--title", "-t", help="Título del módulo."),
     build: bool = typer.Option(False, "--build", "-b", help="Compilar automáticamente a archivo .zip."),
     json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
+    force: bool = typer.Option(False, "--force", "-f", help="Sobrescribir el directorio si ya tiene archivos."),
 ) -> None:
     """Generá un módulo SCORM interactivo con compilador C WebAssembly en el navegador."""
+    if target.is_dir() and any(target.iterdir()) and not force:
+        err_console.print(f"[red]Error:[/red] {target} ya tiene archivos; usá --force para sobrescribirlos.")
+        raise typer.Exit(1)
     course = scaffold_wasm_playground(target, title=title)
     zip_out = None
     if build:
