@@ -273,10 +273,9 @@ def test_cli_diagram_memory_bishop_format(tmp_path: Path) -> None:
     assert res.exit_code == 0
     assert out_diag.exists()
     content = out_diag.read_text(encoding="utf-8")
-    assert "Frame: sumar" in content
-    assert "a: 5" in content
-    assert "Bloque 0x5555555592a0" in content
-    assert "64 bytes (malloc)" in content
+    # Con bishop instalado (extra `ecosistema`) dibuja él, con su formato; si no, el diagrama propio.
+    assert "sumar" in content and "0x5555555592a0" in content and "64 bytes" in content
+    assert "a: 5" in content or ("int a" in content and "val: 5" in content)
 
 
 def test_cli_from_idkfa(tmp_path: Path) -> None:

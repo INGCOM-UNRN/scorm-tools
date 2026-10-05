@@ -195,10 +195,14 @@ def cmd_diagram_memory(
         try:
             from bishop.core.diagrama import generar_diagrama, snapshot_desde_dict
         except ImportError:
+            generar_diagrama = None
+        # bishop entiende su propio snapshot (`frames`); el esquema anterior de scorm-tools
+        # (`stack` con `function` y variables como diccionario) lo sigue dibujando el diagrama propio.
+        if generar_diagrama is not None and "frames" in raw:
+            diagram = generar_diagrama(snapshot_desde_dict(raw, trace_file.name), "mermaid")
+        else:
             frames = raw.get("stack", raw.get("frames", []))
             diagram = generate_memory_diagram(frames, raw.get("heap", []))
-        else:
-            diagram = generar_diagrama(snapshot_desde_dict(raw, trace_file.name), "mermaid")
     except Exception as exc:
         err_console.print(f"[red]Error al procesar traza de memoria:[/red] {exc}")
         raise typer.Exit(1) from exc

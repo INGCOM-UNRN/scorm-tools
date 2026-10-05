@@ -76,7 +76,8 @@ def test_la_cli_procesa_el_snapshot_de_bishop_de_punta_a_punta(tmp_path):
     res = runner.invoke(app, ["diagram-memory", str(traza), "-o", str(salida)])
     assert res.exit_code == 0, res.output
     assert "Error" not in res.output
-    assert "Frame: main" in salida.read_text(encoding="utf-8")
+    contenido = salida.read_text(encoding="utf-8")
+    assert "Frame: main" in contenido or "var_main_a" in contenido
 
 
 @pytest.mark.skipif(not shutil.which("bishop"), reason="requiere bishop instalado")
@@ -95,4 +96,4 @@ def test_con_la_salida_real_de_bishop(tmp_path):
     traza.write_text(snap.stdout, encoding="utf-8")
     res = runner.invoke(app, ["diagram-memory", str(traza)])
     assert res.exit_code == 0, res.output
-    assert "Frame: main" in res.output
+    assert "Frame: main" in res.output or "var_main_" in res.output
