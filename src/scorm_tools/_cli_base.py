@@ -14,7 +14,7 @@ from yutani.textos import traducir
 # La app raíz muestra los errores de datos como mensajes (N-ECO-05).
 # Ayuda y errores de Typer/Click en español, desde yutani (N-ECO-14).
 traducir()
-app = TyperConErrores(
+app: typer.Typer = TyperConErrores(
     context_settings={"help_option_names": ["-h", "--help"]},
     name="scorm-tools",
     help="Herramientas para crear, empaquetar y validar contenido SCORM compatible con Moodle.",

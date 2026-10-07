@@ -195,7 +195,7 @@ def cmd_diagram_memory(
         try:
             from bishop.core.diagrama import generar_diagrama, snapshot_desde_dict
         except ImportError:
-            generar_diagrama = None
+            generar_diagrama = None  # type: ignore[assignment]  # bishop es opcional
         # bishop entiende su propio snapshot (`frames`); el esquema anterior de scorm-tools
         # (`stack` con `function` y variables como diccionario) lo sigue dibujando el diagrama propio.
         if generar_diagrama is not None and "frames" in raw:
