@@ -1,13 +1,13 @@
 """SCORM-D0902: from-gift usa un parser propio; este test verifica su paridad con el del dueño.
 
-moodle-toolbox no es dependencia (un `uv tool` aislado no puede importar su paquete),
-así que el test se omite si `questions` no está instalado en el entorno.
+voight (antes moodle-toolbox) no es dependencia (un `uv tool` aislado no puede importar su
+paquete), así que el test se omite si `voight` no está instalado en el entorno.
 """
 
 import pytest
 
 parser_dueno = pytest.importorskip(
-    "questions.core.parser", reason="moodle-toolbox (paquete `questions`) no está instalado"
+    "voight.core.parser", reason="voight (antes moodle-toolbox) no está instalado"
 )
 
 from scorm_tools.core.gift_quiz import parsear_gift  # noqa: E402

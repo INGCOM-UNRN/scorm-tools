@@ -20,7 +20,7 @@
 ### Límites de Responsabilidad y Delegación (Qué no cubre)
 - Autoría del contenido interactivo HTML, CSS o JavaScript del módulo.
 - Calificación directa de entregas de código de software (delegado a `dredd`).
-- Gestión de bancos de preguntas Moodle XML o GIFT (delegado a `moodle-toolbox`).
+- Gestión de bancos de preguntas Moodle XML o GIFT (delegado a `voight`).
 
 ### Principios de Diseño
 - **Enfoque Pedagógico:** Diagnósticos y mensajes en español rioplatense orientados a facilitar la comprensión de errores conceptuales.

@@ -22,7 +22,7 @@ para crear, gestionar y validar contenido compatible con el estándar **SCORM**
 ### Qué no cubre (Límites y Delegación)
 - Autoría del contenido interactivo HTML, CSS o JavaScript del módulo.
 - Calificación directa de entregas de código de software (delegado a `dredd`).
-- Gestión de bancos de preguntas Moodle XML o GIFT (delegado a `moodle-toolbox`).
+- Gestión de bancos de preguntas Moodle XML o GIFT (delegado a `voight`).
 
 ---
 
@@ -141,7 +141,7 @@ uv run scorm-tools check-size ./mi-curso
 uv run scorm-tools moodle-config ./mi-curso
 
 # Nota: `from-gift` usa un parser GIFT propio (soporta MC, V/F, respuesta corta y
-# numérica; avisa de lo que no puede representar) porque moodle-toolbox no puede
+# numérica; avisa de lo que no puede representar) porque voight no puede
 # importarse desde un `uv tool` aislado. tests/test_paridad_gift_moodle_toolbox.py
 # verifica la paridad con el parser del dueño cuando ambos paquetes coexisten.
 # Generar módulos SCORM desde guías deckard o cuestionarios GIFT/idkfa
