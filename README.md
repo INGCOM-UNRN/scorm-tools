@@ -213,6 +213,7 @@ internet.
 | `scorm-tools check-sequencing` | Verificá el grafo de secuenciamiento IMSSS y detectá ciclos o actividades huérfanas. |
 | `scorm-tools check-size` | Audita el peso del paquete y su desglose por tipo de contenido para Moodle. |
 | `scorm-tools moodle-config` | Generá la configuración recomendada de actividad Moodle (moodle_settings.json). |
+| `scorm-tools check-a11y` | Auditá el cumplimiento de accesibilidad WCAG 2.1 AA en páginas HTML y paquetes SCORM. |
 | `scorm-tools from-deckard` | Convertí una guía de ejercicios de Deckard a un curso SCORM interactivo. |
 | `scorm-tools from-gift` | Convertí un banco de preguntas GIFT (Moodle) en un módulo SCORM interactivo autoevaluable. |
 | `scorm-tools audit-c` | Auditá fragmentos de código C embebidos en el contenido SCORM contra reglas Ripley. |
@@ -225,7 +226,7 @@ Ayuda de cada comando: `scorm-tools <comando> -h`.
 
 ### Salida JSON
 
-Con `--json`, estos comandos emiten el resultado como JSON por la salida estándar, para usarlo desde scripts, ripley o dredd: `scorm-tools doctor`, `scorm-tools init`, `scorm-tools build`, `scorm-tools validate`, `scorm-tools info`, `scorm-tools check-sequencing`, `scorm-tools check-size`, `scorm-tools moodle-config`, `scorm-tools from-deckard`, `scorm-tools from-gift`, `scorm-tools audit-c`, `scorm-tools dredd-sync`, `scorm-tools diagram-memory`, `scorm-tools from-idkfa`, `scorm-tools playground`. El de `doctor --json` lleva `schema_version` y `ok`.
+Con `--json`, estos comandos emiten el resultado como JSON por la salida estándar, para usarlo desde scripts, ripley o dredd: `scorm-tools doctor`, `scorm-tools init`, `scorm-tools build`, `scorm-tools validate`, `scorm-tools info`, `scorm-tools check-sequencing`, `scorm-tools check-size`, `scorm-tools moodle-config`, `scorm-tools check-a11y`, `scorm-tools from-deckard`, `scorm-tools from-gift`, `scorm-tools audit-c`, `scorm-tools dredd-sync`, `scorm-tools diagram-memory`, `scorm-tools from-idkfa`, `scorm-tools playground`. El de `doctor --json` lleva `schema_version` y `ok`.
 
 ### Códigos de salida
 

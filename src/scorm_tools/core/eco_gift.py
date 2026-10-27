@@ -85,7 +85,7 @@ def gift_to_scorm_sco(
     questions.forEach(function(q, i) {{
       var div = document.createElement('div');
       div.className = 'pregunta';
-      div.innerHTML = '<h3>' + (i+1) + '. ' + q.prompt + '</h3>';
+      div.innerHTML = '<h2>' + (i+1) + '. ' + q.prompt + '</h2>';
       if (q.type === 'true_false') {{
         div.innerHTML += '<label><input type="radio" name="q' + i + '" value="true"> Verdadero</label><br>' +
                          '<label><input type="radio" name="q' + i + '" value="false"> Falso</label>';
@@ -94,7 +94,7 @@ def gift_to_scorm_sco(
           div.innerHTML += '<label><input type="radio" name="q' + i + '" value="' + j + '"> ' + opt.text + '</label><br>';
         }});
       }} else if (q.type === 'short_answer' || q.type === 'numeric') {{
-        div.innerHTML += '<input type="text" name="q' + i + '" autocomplete="off" placeholder="Tu respuesta">';
+        div.innerHTML += '<input type="text" name="q' + i + '" aria-label="Respuesta de la pregunta ' + (i+1) + '" autocomplete="off" placeholder="Tu respuesta">';
       }}
       container.appendChild(div);
     }});

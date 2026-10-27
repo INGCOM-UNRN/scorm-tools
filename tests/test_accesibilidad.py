@@ -79,3 +79,60 @@ def test_validate_a11y(tmp_path: Path):
     assert {h["regla"] for h in datos["accesibilidad"]} == {"idioma", "alt-faltante"}
     assert any(e.startswith("Accesibilidad (index.html:1, idioma)") for e in datos["errors"])
     assert runner.invoke(app, ["validate", str(paquete)]).exit_code == 0
+
+
+def test_tablas_semantica_wcag():
+    con_th = """<!DOCTYPE html>
+<html lang="es"><head><title>Tablas</title></head><body>
+<h1>Tablas</h1>
+<table><thead><tr><th>Tipo</th><th>Bytes</th></tr></thead><tbody><tr><td>int</td><td>4</td></tr></tbody></table>
+<table role="presentation"><tr><td>Layout</td></tr></table>
+</body></html>"""
+    assert _reglas(con_th) == []
+
+    sin_th = """<!DOCTYPE html>
+<html lang="es"><head><title>Tablas</title></head><body>
+<h1>Tablas</h1>
+<table><tr><td>int</td><td>4</td></tr></table>
+<table><tr><th>   </th></tr><tr><td>4</td></tr></table>
+</body></html>"""
+    assert _reglas(sin_th) == [
+        ("tabla-sin-encabezado", "error"),
+        ("tabla-sin-encabezado", "error"),
+    ]
+
+
+def test_check_a11y_y_build_a11y(tmp_path: Path):
+    curso = tmp_path / "curso"
+    scaffold_course(curso, title="Curso", version=ScormVersion.SCORM_12)
+    paquete = tmp_path / "curso.zip"
+
+    res_ok = runner.invoke(app, ["build", str(curso), "-o", str(paquete), "--a11y"])
+    assert res_ok.exit_code == 0
+    assert runner.invoke(app, ["check-a11y", str(paquete)]).exit_code == 0
+
+    (curso / "index.html").write_text(
+        '<!DOCTYPE html><html lang="es"><head><title>Curso</title></head><body>'
+        '<h1>Curso</h1><table><tr><td>Sin cabecera</td></tr></table>'
+        '<img src="mem.png" alt="otro_archivo.png"></body></html>',
+        encoding="utf-8",
+    )
+    res_build_fail = runner.invoke(app, ["build", str(curso), "-o", str(paquete), "--a11y"])
+    assert res_build_fail.exit_code == 1
+
+    res_check = runner.invoke(app, ["check-a11y", str(paquete), "--json"])
+    assert res_check.exit_code == 1
+    payload = json.loads(res_check.stdout)
+    assert payload["ok"] is False
+    assert payload["errores"] == 1
+    assert payload["avisos"] == 1
+    assert {h["regla"] for h in payload["hallazgos"]} == {"tabla-sin-encabezado", "alt-generico"}
+
+
+def test_scos_generados_cumplen_a11y(tmp_path: Path):
+    from scorm_tools.core.eco_wasm import scaffold_wasm_playground
+
+    wasm_dir = tmp_path / "wasm_sco"
+    scaffold_wasm_playground(wasm_dir, title="Playground")
+    assert _reglas((wasm_dir / "index.html").read_text(encoding="utf-8")) == []
+

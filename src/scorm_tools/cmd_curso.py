@@ -89,6 +89,9 @@ def build(
     completed_on_view: bool = typer.Option(
         False, "--completed-on-view", help="Marcar automáticamente el SCO como completado al abrirse."
     ),
+    a11y: bool = typer.Option(
+        False, "--a11y", help="Revisar también la accesibilidad de las páginas HTML (WCAG 2.1 AA)."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Emite el resultado en formato JSON versionado."),
 ) -> None:
     """Generá imsmanifest.xml y empaquetá el curso en un .zip para Moodle."""
@@ -117,7 +120,7 @@ def build(
             f"(SCORM {course.version.value}, identifier={course.identifier})"
         )
 
-    report = validate_package(output_zip) if validate else None
+    report = validate_package(output_zip, a11y=a11y) if (validate or a11y) else None
     if json_output:
         _emit_json("build", {
             "paquete": str(output_zip), "version": course.version.value,

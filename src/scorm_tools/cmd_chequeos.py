@@ -1,14 +1,17 @@
-"""Comandos de chequeo: check-sequencing, check-size, moodle-config."""
+"""Comandos de chequeo: check-sequencing, check-size, check-a11y, moodle-config."""
 
 from __future__ import annotations
 
 import json
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.table import Table
 
+from .core.accesibilidad import HallazgoA11y, auditar_html, auditar_paquete
 from .core.descriptor import CourseDescriptorError, load_course
 from .core.moodle import (
     audit_moodle_compatibility,
@@ -138,5 +141,61 @@ def cmd_moodle_config(
 
     if json_output or not output:
         typer.echo(json.dumps(settings, indent=2, ensure_ascii=False))
+
+
+@app.command("check-a11y")
+@app.command("audit-a11y", hidden=True)
+def cmd_check_a11y(
+    path: Path = typer.Argument(..., help="Paquete SCORM (.zip, directorio) o archivo HTML."),
+    strict: bool = typer.Option(False, "--strict", help="Tratar los avisos de accesibilidad como errores."),
+    json_output: bool = typer.Option(False, "--json", help="Emitir el informe de accesibilidad en formato JSON."),
+) -> None:
+    """Auditá el cumplimiento de accesibilidad WCAG 2.1 AA en páginas HTML y paquetes SCORM."""
+    if not path.exists():
+        err_console.print(f"[red]Error:[/red] {path} no existe.")
+        raise typer.Exit(1)
+
+    hallazgos: list[HallazgoA11y] = []
+    if path.is_dir():
+        hallazgos = auditar_paquete(path)
+    elif path.suffix.lower() in (".html", ".htm"):
+        contenido = path.read_text(encoding="utf-8", errors="replace")
+        hallazgos = auditar_html(contenido, path.name)
+    elif zipfile.is_zipfile(path):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            with zipfile.ZipFile(path, "r") as zf:
+                zf.extractall(tmp_path)
+            hallazgos = auditar_paquete(tmp_path)
+    else:
+        err_console.print(f"[red]Error:[/red] {path} no es un directorio, archivo .zip ni página HTML válida.")
+        raise typer.Exit(1)
+
+    errores = [h for h in hallazgos if h.severidad == "error"]
+    avisos = [h for h in hallazgos if h.severidad == "aviso"]
+    ok = len(errores) == 0 and (not strict or len(avisos) == 0)
+
+    if json_output:
+        typer.echo(json.dumps({
+            "archivo": str(path),
+            "ok": ok,
+            "errores": len(errores),
+            "avisos": len(avisos),
+            "hallazgos": [h.to_dict() for h in hallazgos],
+        }, indent=2, ensure_ascii=False))
+    else:
+        for h in hallazgos:
+            etiqueta = "[red]ERROR[/red]" if h.severidad == "error" else "[yellow]AVISO[/yellow]"
+            ubicacion = f"{h.archivo}:{h.linea}" if h.linea else h.archivo
+            console.print(f"  {etiqueta} [{h.regla}] {ubicacion}: {h.mensaje}")
+        if ok and not hallazgos:
+            console.print(f"[green]✓ Sin problemas de accesibilidad WCAG 2.1 AA en {path}[/green]")
+        else:
+            color = "red" if not ok else "yellow"
+            console.print(f"[{color}]Total: {len(errores)} error(es), {len(avisos)} aviso(s)[/{color}]")
+
+    if not ok:
+        raise typer.Exit(1)
+
 
 

@@ -41,7 +41,8 @@ def scaffold_wasm_playground(target_dir: Path, title: str = "Playground C WebAss
     <h1>{html.escape(title)}</h1>
     <p>Escribí y revisá tu código C. Este paquete no incluye un compilador: para
     compilarlo y ejecutarlo usá <code>daedalus</code> en tu equipo.</p>
-    <textarea id="editor">#include &lt;stdio.h&gt;
+    <label for="editor">Código C</label>
+    <textarea id="editor" aria-label="Código C">#include &lt;stdio.h&gt;
 
 int main(void) {{
     printf("¡Hola desde el Playground C WebAssembly!\\n");

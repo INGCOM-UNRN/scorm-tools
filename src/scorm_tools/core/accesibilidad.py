@@ -97,7 +97,11 @@ def auditar_html(contenido: str, archivo: str = "") -> List[HallazgoA11y]:
         if alt is None and img.get("role") not in ("presentation", "none"):
             anotar(img, "alt-faltante", "error", f"La imagen {origen} no tiene atributo alt (si es decorativa, "
                                                  "alt=\"\").")
-        elif alt and (_normalizar(alt) in ALT_GENERICOS or alt.strip() == origen.rsplit("/", 1)[-1]):
+        elif alt and (
+            _normalizar(alt) in ALT_GENERICOS
+            or alt.strip() == origen.rsplit("/", 1)[-1]
+            or bool(re.fullmatch(r"[\w.-]+\.(png|jpe?g|gif|svg|webp)", alt.strip(), re.IGNORECASE))
+        ):
             anotar(img, "alt-generico", "aviso", f"El texto alternativo «{alt.strip()}» de {origen} no describe "
                                                  "la imagen.")
 
@@ -128,6 +132,27 @@ def auditar_html(contenido: str, archivo: str = "") -> List[HallazgoA11y]:
     for iframe in documento.iter("iframe"):
         if not (iframe.get("title") or "").strip():
             anotar(iframe, "iframe-sin-titulo", "error", "El <iframe> no tiene title.")
+
+    for tabla in documento.iter("table"):
+        if (tabla.get("role") or "").strip().lower() in ("presentation", "none"):
+            continue
+        celdas_th = [
+            el for el in tabla.iter("th", "td")
+            if (el.tag == "th" or (el.get("role") or "").strip().lower() in ("columnheader", "rowheader"))
+            and next(el.iterancestors("table"), None) is tabla
+        ]
+        if not celdas_th:
+            anotar(tabla, "tabla-sin-encabezado", "error",
+                   "La <table> no tiene celdas de encabezado (<th>): un lector de pantalla no puede asociar "
+                   "los datos con sus columnas o filas.")
+        elif not any(
+            _texto(c)
+            or (c.get("aria-label") or "").strip()
+            or any((i.get("alt") or "").strip() for i in c.iter("img"))
+            for c in celdas_th
+        ):
+            anotar(tabla, "tabla-sin-encabezado", "error",
+                   "La <table> tiene celdas <th> vacías sin texto descriptivo.")
 
     for video in documento.iter("video"):
         if not any(t.get("kind") in ("captions", "subtitles") for t in video.iter("track")):
