@@ -45,7 +45,7 @@ def _obtener_catalogo_spunkmeyer() -> dict[str, dict[str, str]]:
             "0x4002h": {
                 "codigo": "0x4002h", "alias": "AP002",
                 "nombre": "Control de lectura con while(!feof())",
-                "mensaje": "Usar '!feof(f)' como condición del bucle provoca procesar el último registro dos veces.",
+                "mensaje": "Usar '!feof(f)' como condición del lazo provoca procesar el último registro dos veces.",
             },
         }
 
