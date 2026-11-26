@@ -14,10 +14,24 @@ wheels = [
 [[package]]
 name = "bishop"
 version = "0.2.0"
-source = { git = "https://github.com/INGCOM-UNRN-P1/bishop?rev=bde1ee091ff1d3d5ac6f26436ad211f5ce78e092#bde1ee091ff1d3d5ac6f26436ad211f5ce78e092" }
+source = { git = "https://github.com/INGCOM-UNRN-P1/bishop?rev=55c4d1e0d16806201af4ce7f4ffdc79105422fcd#55c4d1e0d16806201af4ce7f4ffdc79105422fcd" }
+dependencies = [
+    { name = "brett" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "typer" },
+    { name = "yutani" },
+]
+
+[[package]]
+name = "brett"
+version = "0.2.0"
+source = { git = "https://github.com/INGCOM-UNRN-P1/brett?rev=a5d1c737b35c227bb47cbc41943c8c9174ec52e6#a5d1c737b35c227bb47cbc41943c8c9174ec52e6" }
 dependencies = [
     { name = "pyyaml" },
     { name = "rich" },
+    { name = "tree-sitter" },
+    { name = "tree-sitter-c" },
     { name = "typer" },
     { name = "yutani" },
 ]
@@ -55,7 +69,7 @@ wheels = [
 [[package]]
 name = "kaneda"
 version = "0.2.0"
-source = { git = "https://github.com/INGCOM-UNRN-P1/kaneda?rev=f696df53781e3c3eadcf851963aee1e90cdf92d0#f696df53781e3c3eadcf851963aee1e90cdf92d0" }
+source = { git = "https://github.com/INGCOM-UNRN-P1/kaneda?rev=688620f7c7044e89dadef65ef30bf668faafd867#688620f7c7044e89dadef65ef30bf668faafd867" }
 dependencies = [
     { name = "rich" },
     { name = "tree-sitter" },
@@ -429,15 +443,15 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bishop", marker = "extra == 'ecosistema'", git = "https://github.com/INGCOM-UNRN-P1/bishop?rev=bde1ee091ff1d3d5ac6f26436ad211f5ce78e092" },
+    { name = "bishop", marker = "extra == 'ecosistema'", git = "https://github.com/INGCOM-UNRN-P1/bishop?rev=55c4d1e0d16806201af4ce7f4ffdc79105422fcd" },
     { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "kaneda", marker = "extra == 'ecosistema'", git = "https://github.com/INGCOM-UNRN-P1/kaneda?rev=f696df53781e3c3eadcf851963aee1e90cdf92d0" },
+    { name = "kaneda", marker = "extra == 'ecosistema'", git = "https://github.com/INGCOM-UNRN-P1/kaneda?rev=688620f7c7044e89dadef65ef30bf668faafd867" },
     { name = "lxml", specifier = ">=5.0.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "rich", specifier = ">=13.0.0" },
-    { name = "spunkmeyer", marker = "extra == 'ecosistema'", git = "https://github.com/INGCOM-UNRN-P1/spunkmeyer?rev=b70c5f6ba9fa7cf6b63793a7302ec0284ba825fe" },
+    { name = "spunkmeyer", marker = "extra == 'ecosistema'", git = "https://github.com/INGCOM-UNRN-P1/spunkmeyer?rev=26c618af3ac4dd88bb5b930f478351f45ef67dd7" },
     { name = "typer", specifier = ">=0.12.0" },
-    { name = "yutani", git = "https://github.com/INGCOM-UNRN-P1/yutani?rev=cf49348fae40d264006fe07dee2cc9e88dd9c934" },
+    { name = "yutani", git = "https://github.com/INGCOM-UNRN/yutani?rev=6e42d7ab8b89a1084381f8aea0999a498a844f6c" },
 ]
 provides-extras = ["ecosistema"]
 
@@ -456,7 +470,7 @@ wheels = [
 [[package]]
 name = "spunkmeyer"
 version = "0.2.0"
-source = { git = "https://github.com/INGCOM-UNRN-P1/spunkmeyer?rev=b70c5f6ba9fa7cf6b63793a7302ec0284ba825fe#b70c5f6ba9fa7cf6b63793a7302ec0284ba825fe" }
+source = { git = "https://github.com/INGCOM-UNRN-P1/spunkmeyer?rev=26c618af3ac4dd88bb5b930f478351f45ef67dd7#26c618af3ac4dd88bb5b930f478351f45ef67dd7" }
 dependencies = [
     { name = "pyyaml" },
     { name = "rich" },
@@ -536,7 +550,7 @@ wheels = [
 [[package]]
 name = "yutani"
 version = "0.1.0"
-source = { git = "https://github.com/INGCOM-UNRN-P1/yutani?rev=cf49348fae40d264006fe07dee2cc9e88dd9c934#cf49348fae40d264006fe07dee2cc9e88dd9c934" }
+source = { git = "https://github.com/INGCOM-UNRN/yutani?rev=6e42d7ab8b89a1084381f8aea0999a498a844f6c#6e42d7ab8b89a1084381f8aea0999a498a844f6c" }
 dependencies = [
     { name = "rich" },
     { name = "typer" },

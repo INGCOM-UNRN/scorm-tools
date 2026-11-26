@@ -14,7 +14,7 @@ from typing import Any
 # 4. Integración con Ripley / Kaneda / Spunkmeyer: Auditor de Código C Embebido
 # ============================================================================
 
-def _obtener_catalogo_kaneda() -> dict[str, dict[str, str]]:
+def _obtener_catalogo_kaneda() -> dict[str, dict[str, str | None]]:
     """Carga canónicamente el catálogo de seguridad de Kaneda."""
     try:
         from kaneda.core.rules import CATALOGO_SEGURIDAD
@@ -72,7 +72,7 @@ def extract_and_audit_c_code(dir_path: Path) -> list[dict[str, Any]]:
                 findings.append({
                     "file": str(html_file.name),
                     "rule": "KAN001 / 0x3001h (SEGURIDAD)",
-                    "detail": kan_info.get("titulo", "Uso de la función prohibida 'gets()'.") + " " + kan_info.get("descripcion", "Provoca desbordamiento de búfer."),
+                    "detail": (kan_info.get("titulo") or "Uso de la función prohibida 'gets()'.") + " " + (kan_info.get("descripcion") or "Provoca desbordamiento de búfer."),
                 })
 
             # Antipatrones didácticos (Spunkmeyer AP001: 0x300Ah / AP002: 0x4002h)
